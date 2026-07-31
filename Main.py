@@ -332,6 +332,12 @@ class ChemieApp(App):
 
     def assistent_spreekt(self, tekst):
         try:
+            if platform == 'android':
+                # Op Android slaan we online edge-tts over om crashen te voorkomen
+                print(f"[Android TTS stand-in]: {tekst}")
+                return
+
+            # --- WINDOWS CODE (Blijft ongewijzigd) ---
             bestandsnaam = f"spraak_{int(time.time())}.mp3"
             asyncio.run(edge_tts.Communicate(tekst, "nl-NL-FennaNeural").save(bestandsnaam))
 
