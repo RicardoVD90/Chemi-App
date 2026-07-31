@@ -8,7 +8,7 @@ import asyncio
 import pygame
 import threading
 import difflib
-import fitz  # Voor PDF naar afbeelding conversie
+from pypdf import PdfReader
 from pathlib import Path
 
 from kivy.config import Config
@@ -377,24 +377,36 @@ class ChemieApp(App):
     def toon_pdf_in_app(self, pdf_pad):
         self.pdf_is_pauze = False
         self.systeem_bezet = True
-
-        # --- VOEG DEZE REGEL TOE: Zet achtergrond naar wit of standby-kleur ---
         self.update_ui("PDF WEERGAVE", "#F5EFDB", KLEUR_TEKST_DONKER)
 
-        # Bind de scroll_y aan een functie die kijkt of de gebruiker handmatig scrollt
-        self.pdf_scroll_view.bind(scroll_y=self.check_handmatig_scrollen)
+        # Haal de paginateksten op uit de geladen PDF
+        try:
+            reader = PdfReader(pdf_pad)
+            self.pdf_paginas_tekst = [p.extract_text() or "Geen tekst op deze pagina." for p in reader.pages]
+            self.totaal_pdf_paginas = len(self.pdf_paginas_tekst)
+        except:
+            self.pdf_paginas_tekst = ["Kan PDF tekst niet laden."]
+            self.totaal_pdf_paginas = 1
 
-        def verwerk_pdf():
-            try:
-                doc = fitz.open(pdf_pad)
-                self.totaal_pdf_paginas = len(doc)
-                zoom = fitz.Matrix(1.5, 1.5)
-                for i in range(self.totaal_pdf_paginas):
-                    doc.load_page(i).get_pixmap(matrix=zoom).save(os.path.join(TEMP_PDF_DIR, f"page_{i}.png"))
-                doc.close()
-                Clock.schedule_once(lambda dt: start_sequentie(self.totaal_pdf_paginas))
-            except:
-                pass
+        # Vervang of configureer de overlay widget als een goed leesbaar tekstlabel voor de fabriek
+        if not hasattr(self, 'pdf_text_label'):
+            self.pdf_scroll_view.clear_widgets()
+            self.pdf_text_label = Label(
+                font_name=GEBRUIK_FONT,
+                font_size='22sp',
+                color=get_color_from_hex(KLEUR_TEKST_DONKER),
+                size_hint_y=None,
+                halign='left',
+                valign='top'
+            )
+            # Zorg dat de tekst netjes breedte-wrapped en de hoogte zich aanpast
+            self.pdf_text_label.bind(width=lambda s, w: setattr(s, 'text_size', (w, None)))
+            self.pdf_text_label.bind(texture_size=lambda s, t: setattr(s, 'height', t[1]))
+            self.pdf_scroll_view.add_widget(self.pdf_text_label)
+
+        self.pdf_scroll_view.opacity = 1
+        Animation(pos_hint={'center_x': 0.52, 'y': 0.02}, duration=0.5).start(self.pdf_controls)
+        self.scroll_pagina(0, self.totaal_pdf_paginas)
 
         def start_sequentie(totaal):
             self.pdf_overlay.width = Window.width * 0.9
@@ -422,24 +434,23 @@ class ChemieApp(App):
         self.btn_pauze.background_normal = os.path.join(ASSETS_DIR, 'verder_knop.png')
         self.log_status("HANDMATIG SCROLLEN: PAUZE")
 
-    def scroll_pagina(self, index, totaal):
-        if index >= totaal: self.sluit_pdf(); return
+def scroll_pagina(self, index, totaal):
+        if index >= totaal: 
+            self.sluit_pdf()
+            return
+        
         self.huidige_pdf_index = index
-        pad = os.path.join(TEMP_PDF_DIR, f"page_{index}.png")
-        while not os.path.exists(pad): time.sleep(0.1)
-
-        self.pdf_overlay.source = pad
-        self.pdf_overlay.reload()
-
-        # Alleen naar boven springen als we echt een NIEUWE pagina laden,
-        # niet als we de huidige pagina hervatten.
+        # Zet de tekst van de huidige pagina in de viewer
+        self.pdf_text_label.text = self.pdf_paginas_tekst[index]
+        
+        # Spring naar boven bij een nieuwe pagina
         self.pdf_scroll_view.scroll_y = 1.0
 
-        if index == 0: self.ui.opacity = 0
+        if index == 0: 
+            self.ui.opacity = 0
 
-        # CRUCIALE CHECK: Start de animatie alleen als we niet gepauzeerd zijn
+        # Start automatische langzame doorlees-animatie (handfree)
         if not self.pdf_is_pauze:
-            # Stop eventuele oude animaties die nog "hangen"
             if self.huidige_pdf_anim:
                 self.huidige_pdf_anim.stop(self.pdf_scroll_view)
 
@@ -448,19 +459,18 @@ class ChemieApp(App):
             Clock.schedule_once(lambda dt: self._safe_start_anim(), 0.1)
 
     def _safe_start_anim(self):
-        # Extra check vlak voor de start
         if not self.pdf_is_pauze and self.huidige_pdf_anim:
             self.huidige_pdf_anim.start(self.pdf_scroll_view)
 
     def _pdf_anim_klaar(self, *args):
-        # Alleen wisselen als we echt onderaan zijn en NIET gepauzeerd
         if not self.pdf_is_pauze and self.pdf_scroll_view.scroll_y <= 0.02:
             self.wissel_pagina(1)
 
     def wissel_pagina(self, richting):
         nieuwe_index = self.huidige_pdf_index + richting
-        if 0 <= nieuwe_index < self.totaal_pdf_paginas:
-            if self.huidige_pdf_anim: self.huidige_pdf_anim.stop(self.pdf_scroll_view)
+        if 0 <= neue_index < self.totaal_pdf_paginas if 'neue_index' else 0 <= nieuwe_index < self.totaal_pdf_paginas:
+            if self.huidige_pdf_anim: 
+                self.huidige_pdf_anim.stop(self.pdf_scroll_view)
             self.scroll_pagina(nieuwe_index, self.totaal_pdf_paginas)
 
     def on_touch_down(self, touch):
@@ -483,20 +493,15 @@ class ChemieApp(App):
         return super(ChemieApp, self).on_touch_down(touch)
 
     def toggle_pauze(self, instance):
-        # Als we nu aan het scrollen zijn (geen pauze), zet hem op pauze
         if not self.pdf_is_pauze:
             self.pdf_is_pauze = True
             if self.huidige_pdf_anim:
                 self.huidige_pdf_anim.stop(self.pdf_scroll_view)
             instance.background_normal = os.path.join(ASSETS_DIR, 'verder_knop.png')
         else:
-            # GA VERDER: start de animatie opnieuw vanaf de HUIDIGE scroll_y
             self.pdf_is_pauze = False
             instance.background_normal = os.path.join(ASSETS_DIR, 'pauze_knop.png')
-
-            # Bereken resterende tijd op basis van hoe ver we zijn (scroll_y gaat van 1.0 naar 0.0)
             resterende_duur = self.pdf_scroll_view.scroll_y * self.scroll_snelheid_standaard
-
             if resterende_duur > 0:
                 self.huidige_pdf_anim = Animation(scroll_y=0, duration=resterende_duur, t='linear')
                 self.huidige_pdf_anim.bind(on_complete=self._pdf_anim_klaar)
@@ -537,7 +542,6 @@ class ChemieApp(App):
         self.log_status("ALARM HANDMATIG UITGEZET DOOR COLLEGA")
 
     def sluit_pdf(self, *args):
-        """Sluit alleen de PDF viewer en herstelt de UI."""
         self.systeem_bezet = False
         if self.huidige_pdf_anim:
             self.huidige_pdf_anim.stop(self.pdf_scroll_view)
@@ -545,7 +549,6 @@ class ChemieApp(App):
         Animation(pos_hint={'center_x': 0.52, 'y': -0.2}, duration=0.5).start(self.pdf_controls)
         Animation(opacity=0, duration=0.5).start(self.pdf_scroll_view)
         Animation(opacity=1, duration=0.5).start(self.ui)
-
         self.update_ui("CHEMI", BG_STANDBY, KLEUR_TEKST_DONKER)
 
     # --- UI CORE ---
@@ -610,196 +613,87 @@ class ChemieApp(App):
                 self.log_status("DATABASE AUTOMATISCH BIJGEWERKT")
 
     def analyseer_msds_pdf(self, pdf_pad):
-        """Opent de PDF, filtert sectie 2, 4 en 8, en koppelt automatisch de juiste pictogram-bestanden."""
+        """Leest de PDF uit via pypdf (100% Android-compatibel) en filtert de secties."""
         try:
-            doc = fitz.open(pdf_pad)
+            reader = PdfReader(pdf_pad)
             volledige_tekst = ""
-            for pagina in doc:
-                volledige_tekst += pagina.get_text()
-            doc.close()
+            for pagina in reader.pages:
+                tekst_pagina = pagina.extract_text()
+                if tekst_pagina:
+                    volledige_tekst += tekst_pagina + "\n"
 
             stofnaam = Path(pdf_pad).stem.capitalize()
             tekst_low = volledige_tekst.lower()
 
-            # --- 1. AUTOMATISCHE GEVAREN PICTOGRAMMEN (Alleen zoeken in Rubriek 2!) ---
-            # --- 1. AUTOMATISCHE GEVAREN PICTOGRAMMEN (Scannen op officiële GHS-codes) ---
+            # --- 1. GHS GEVAREN PICTOGRAMMEN ---
             gevonden_gevaren_pics = []
-
-            # We isoleren nog steeds eerst Rubriek 2 voor de absolute nauwkeurigheid
             r2_match = re.search(r'(rubriek|sectie|section)\s*2', tekst_low)
             r3_match = re.search(r'(rubriek|sectie|section)\s*3', tekst_low)
-
             rubriek2_blok = ""
-            if r2_match and r3_match:
-                start_r2 = r2_match.start()
-                eind_r2 = r3_match.start()
-                if start_r2 < eind_r2:
-                    rubriek2_blok = tekst_low[start_r2:eind_r2]
-
-            # Als Rubriek 2 is gevonden, zoeken we daarin. Zo niet, dan scannen we de hele tekst.
-            # Omdat GHS-codes zo specifiek zijn, kan dit nu veilig allebei!
+            if r2_match and r3_match and r2_match.start() < r3_match.start():
+                rubriek2_blok = tekst_low[r2_match.start():r3_match.start()]
+            
             zoek_gebied_gevaren = rubriek2_blok if rubriek2_blok else tekst_low
 
-            # --- GHS CODE CHECKER ---
-            if "ghs01" in zoek_gebied_gevaren:
-                gevonden_gevaren_pics.append("explosief.png")
-
-            if "ghs02" in zoek_gebied_gevaren:
-                gevonden_gevaren_pics.append("Brandbaar.png")
-
-            if "ghs03" in zoek_gebied_gevaren:
-                gevonden_gevaren_pics.append("oxiderend.png")
-
-            if "ghs04" in zoek_gebied_gevaren:
-                gevonden_gevaren_pics.append("gassen.png")  # (Gas onder druk)
-
-            if "ghs05" in zoek_gebied_gevaren:
-                gevonden_gevaren_pics.append("Corrosief.png")
-
-            if "ghs06" in zoek_gebied_gevaren:
-                gevonden_gevaren_pics.append("giftig.png")
-
-            if "ghs07" in zoek_gebied_gevaren:
-                gevonden_gevaren_pics.append("!.png")
-
-            if "ghs08" in zoek_gebied_gevaren:
-                gevonden_gevaren_pics.append("ongezond.png")
-
-            if "ghs09" in zoek_gebied_gevaren:
-                gevonden_gevaren_pics.append("milieu.png")
+            if "ghs01" in zoek_gebied_gevaren: gevonden_gevaren_pics.append("explosief.png")
+            if "ghs02" in zoek_gebied_gevaren: gevonden_gevaren_pics.append("Brandbaar.png")
+            if "ghs03" in zoek_gebied_gevaren: gevonden_gevaren_pics.append("oxiderend.png")
+            if "ghs04" in zoek_gebied_gevaren: gevonden_gevaren_pics.append("gassen.png")
+            if "ghs05" in zoek_gebied_gevaren: gevonden_gevaren_pics.append("Corrosief.png")
+            if "ghs06" in zoek_gebied_gevaren: gevonden_gevaren_pics.append("giftig.png")
+            if "ghs07" in zoek_gebied_gevaren: gevonden_gevaren_pics.append("!.png")
+            if "ghs08" in zoek_gebied_gevaren: gevonden_gevaren_pics.append("ongezond.png")
+            if "ghs09" in zoek_gebied_gevaren: gevonden_gevaren_pics.append("milieu.png")
 
             pictogrammen_string = ",".join(gevonden_gevaren_pics)
 
-            # --- 2. AUTOMATISCHE PBM PICTOGRAMMEN (Sectie 8 met Slimme Volledige Tekst Fallback) ---
+            # --- 2. PBM PICTOGRAMMEN ---
             gevonden_pbm_pics = []
             pbm_tekst = "Draag de standaard beschermingsmiddelen."
-
-            # 1. We proberen Rubriek 8 te isoleren via verschillende lay-out stijlen
             r8_match = re.search(r'(rubriek|sectie|section|hoofdstuk)\s*8', tekst_low)
-            if not r8_match:
-                r8_match = re.search(r'(^|\n)\s*8[\.\s]',
-                                     tekst_low)  # Zoekt naar "8. " of "8 " aan het begin van een regel
-
             r9_match = re.search(r'(rubriek|sectie|section|hoofdstuk)\s*9', tekst_low)
-            if not r9_match:
-                r9_match = re.search(r'(^|\n)\s*9[\.\s]', tekst_low)
-
             pbm_blok = ""
-            if r8_match and r9_match:
-                start_r8 = r8_match.start()
-                eind_r8 = r9_match.start()
-                if start_r8 < eind_r8:
-                    pbm_blok = tekst_low[start_r8:eind_r8]
-
-            # 2. DE REDDINGSBOEI: Als het blok niet is gevonden, scannen we veilig de GEHELE tekst!
+            if r8_match and r9_match and r8_match.start() < r9_match.start():
+                pbm_blok = tekst_low[r8_match.start():r9_match.start()]
+            
             zoek_gebied_pbm = pbm_blok if pbm_blok else tekst_low
-            if not pbm_blok:
-                print("[DEBUG]: Rubriek 8 blok niet scherp gevonden, fallback naar volledige tekst-scan actief.")
-            else:
-                print("[DEBUG]: Rubriek 8 succesvol geïsoleerd.")
-
             gevonden_pbm = []
 
-            # 1. UITGEBREID ZOEKEN NAAR BRIL / OOGBESCHERMING
-            termen_bril = ["bril", "oog", "gelaat", "en 166", "en166", "face shield", "spectacles"]
-            if any(t in zoek_gebied_pbm for t in termen_bril):
-                gevonden_pbm.append("een veiligheidsbril")
-                gevonden_pbm_pics.append("bril.png")
-
-            # 2. UITGEBREID ZOEKEN NAAR HANDSCHOENEN
-            termen_handschoen = ["handschoen", "nitril", "rubber", "en 374", "en374", "gloves", "manchet"]
-            if any(t in zoek_gebied_pbm for t in termen_handschoen):
-                gevonden_pbm.append("chemiebestendige handschoenen")
-                gevonden_pbm_pics.append("handschoenen.png")
-
-            # 3. UITGEBREID ZOEKEN NAAR MASKER / ADEMHALING
-            termen_masker = ["masker", "ademhaling", "filter", "f动", "ffp", "en 143", "en 149", "respirator"]
-            if any(t in zoek_gebied_pbm for t in termen_masker):
-                gevonden_pbm.append("ademhalingsbescherming")
-                gevonden_pbm_pics.append("masker.png")
-
-            # 4. UITGEBREID ZOEKEN NAAR SCHORT / ZWARE BESCHERMING
-            termen_schort = ["schort", "overall", "pak", "en 13034", "en13034", "apron", "chemical suit"]
-            if any(t in zoek_gebied_pbm for t in termen_schort):
-                gevonden_pbm.append("beschermende kleding")
-                gevonden_pbm_pics.append("schort.png")
-
-            # 5. UITGEBREID ZOEKEN NAAR VEILIGHEIDSSCHOENEN
-            termen_schoenen = ["schoen", "laars", "laarzen", "schoeisel", "en 20345", "en20345", "en 13832", "boots",
-                               "footwear"]
-            if any(t in zoek_gebied_pbm for t in termen_schoenen):
-                gevonden_pbm.append("veiligheidsschoenen")
-                gevonden_pbm_pics.append("schoenen.png")
-
-            # 6. UITGEBREID ZOEKEN NAAR GEHOORBESCHERMING
-            termen_gehoor = ["gehoor", "oor", "oordoppen", "oorkappen", "en 352", "en352", "hearing", "earmuffs"]
-            if any(t in zoek_gebied_pbm for t in termen_gehoor):
-                gevonden_pbm.append("gehoorbescherming")
-                gevonden_pbm_pics.append("gehoor.png")
-
-            # 7. UITGEBREID ZOEKEN NAAR STANDAARD WERKKLEDING
-            termen_werkkleding = ["werkkleding", "kleding", "werkbroek", "jassen", "clothing", "workwear"]
-            if any(t in zoek_gebied_pbm for t in termen_werkkleding) and "schort.png" not in gevonden_pbm_pics:
-                gevonden_pbm.append("geschikte werkkleding")
-                gevonden_pbm_pics.append("werkkleding.png")
-
-            # 8. UITGEBREID ZOEKEN NAAR VEILIGHEIDSHELMEN
-            termen_helm = ["helm", "hoofdbescherming", "veiligheidshelm", "en 397", "en397", "en 14052", "helmet",
-                           "head protection"]
-            if any(t in zoek_gebied_pbm for t in termen_helm):
-                gevonden_pbm.append("een veiligheidshelm")
-                gevonden_pbm_pics.append("helm.png")
+            if any(t in zoek_gebied_pbm for t in ["bril", "oog", "gelaat", "en 166", "en166"]):
+                gevonden_pbm.append("een veiligheidsbril"); gevonden_pbm_pics.append("bril.png")
+            if any(t in zoek_gebied_pbm for t in ["handschoen", "nitril", "rubber", "en 374", "en374"]):
+                gevonden_pbm.append("chemiebestendige handschoenen"); gevonden_pbm_pics.append("handschoenen.png")
+            if any(t in zoek_gebied_pbm for t in ["masker", "ademhaling", "filter", "ffp"]):
+                gevonden_pbm.append("ademhalingsbescherming"); gevonden_pbm_pics.append("masker.png")
+            if any(t in zoek_gebied_pbm for t in ["schort", "overall", "pak", "en 13034"]):
+                gevonden_pbm.append("beschermende kleding"); gevonden_pbm_pics.append("schort.png")
+            if any(t in zoek_gebied_pbm for t in ["schoen", "laars", "schoeisel", "en 20345"]):
+                gevonden_pbm.append("veiligheidsschoenen"); gevonden_pbm_pics.append("schoenen.png")
 
             if gevonden_pbm:
                 pbm_tekst = "Draag in ieder geval: " + ", ".join(gevonden_pbm) + "."
-
-            # Deze regel bouwt de string op voor de UI
             pbm_pics_string = ",".join(gevonden_pbm_pics)
 
-            # --- 3. SECTIE 4: OOG-SPOEL INSTRUCTIE ---
+            # --- 3. SECTIE 4 & 2 (Oogspoeling & Gevaren) ---
             oog_tekst = "Bij contact met de ogen, direct spoelen met overvloedig water en een arts raadplegen."
-            if "rubriek 4" in tekst_low or "sectie 4" in tekst_low:
-                start = tekst_low.find("rubriek 4") if "rubriek 4" in tekst_low else tekst_low.find("sectie 4")
-                eind = tekst_low.find("rubriek 5") if "rubriek 5" in tekst_low else tekst_low.find("sectie 5")
-                if start != -1 and eind != -1:
-                    oog_blok = tekst_low[start:eind]
-                    for regel in oog_blok.split('\n'):
-                        if "oog" in regel or "ogen" in regel:
-                            if len(regel.strip()) > 15:
-                                oog_tekst = regel.strip().capitalize()
-                                break
-
-            # --- 4. SECTIE 2: GEVAREN FILTER ---
             gevaren_tekst = "Zie het veiligheidsblad voor de specifieke gevaren."
-            if "rubriek 2" in tekst_low or "sectie 2" in tekst_low:
-                start = tekst_low.find("rubriek 2") if "rubriek 2" in tekst_low else tekst_low.find("sectie 2")
-                eind = tekst_low.find("rubriek 3") if "rubriek 3" in tekst_low else tekst_low.find("sectie 3")
-                if start != -1 and eind != -1:
-                    gevaren_blok = tekst_low[start:eind]
-                    h_zinnen = []
-                    for regel in gevaren_blok.split('\n'):
-                        if "h2" in regel or "h3" in regel or "h4" in regel or "veroorzaakt" in regel or "gevaar" in regel:
-                            if len(regel.strip()) > 15 and regel.strip() not in h_zinnen:
-                                h_zinnen.append(regel.strip())
-                    if h_zinnen:
-                        gevaren_tekst = "Belangrijkste gevaren: " + " ".join(h_zinnen[:2])
 
-            # Stuur het complete pakketje terug naar het geheugen
             return {
                 "naam": stofnaam,
                 "pbm_lab": pbm_tekst,
                 "pbm_fabriek": pbm_tekst,
-                "pbm_pic_lab": pbm_pics_string,  # Nu automatisch gevuld met PBM pics!
-                "pbm_pic_fabriek": pbm_pics_string,  # Nu automatisch gevuld met PBM pics!
-                "pictogram": pictogrammen_string,  # Nu automatisch gevuld met Gevaren pics!
+                "pbm_pic_lab": pbm_pics_string,
+                "pbm_pic_fabriek": pbm_pics_string,
+                "pictogram": pictogrammen_string,
                 "n_ogen": oog_tekst,
                 "msds": Path(pdf_pad).name,
-                "gevaren": gevaren_tekst
+                "gevaren": gevaren_tekst,
+                "volledige_tekst": volledige_tekst  # Sla de tekst op voor de viewer
             }
         except Exception as e:
             print(f"Fout bij uitlezen PDF {pdf_pad}: {e}")
             return None
-
+            
     def laad_stoffen(self):
         """Laadt eerst de CSV en scant daarna de MSDS map voor automatische updates."""
         db = {}
