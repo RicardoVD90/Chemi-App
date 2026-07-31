@@ -45,7 +45,6 @@ jobs:
               openjdk-17-jdk \
               unzip \
               zip \
-              libncurses5 \
               libstdc++6 \
               libglu1-mesa-dev \
               libpulse-dev
