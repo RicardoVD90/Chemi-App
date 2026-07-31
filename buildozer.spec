@@ -16,3 +16,11 @@ android.permissions = RECORD_AUDIO,READ_EXTERNAL_STORAGE,WRITE_EXTERNAL_STORAGE
 
 orientation = landscape
 fullscreen = 1
+
+# Automatisch akkoord geven op de Android SDK licentievoorwaarden
+android.accept_sdk_license = True
+
+# Doel-API en NDK versies vastzetten voor een stabiele download
+android.api = 33
+android.minapi = 21
+android.ndk = 25b
