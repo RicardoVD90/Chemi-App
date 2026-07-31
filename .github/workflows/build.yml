@@ -11,10 +11,54 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Build with Buildozer
-        uses: kivy/buildozer-action@master
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          filename: buildozer.spec
+          python-version: '3.10'
+
+      - name: Install System Dependencies
+        run: |
+          sudo dpkg --add-architecture i386
+          sudo apt-get update
+          sudo apt-get install -y \
+              build-essential \
+              git \
+              python3-dev \
+              ffmpeg \
+              libsdl2-dev \
+              libsdl2-image-dev \
+              libsdl2-mixer-dev \
+              libsdl2-ttf-dev \
+              libportmidi-dev \
+              libswscale-dev \
+              libavformat-dev \
+              libavcodec-dev \
+              zlib1g-dev \
+              libgstreamer1.0-dev \
+              gstreamer1.0-plugins-base \
+              gstreamer1.0-plugins-good \
+              gstreamer1.0-plugins-bad \
+              gstreamer1.0-plugins-ugly \
+              autoconf \
+              libtool \
+              pkg-config \
+              openjdk-17-jdk \
+              unzip \
+              zip \
+              libncurses5 \
+              libstdc++6 \
+              libglu1-mesa-dev \
+              libpulse-dev
+
+      - name: Install Buildozer and Cython
+        run: |
+          pip install --upgrade pip
+          pip install --user Cython==0.29.36 buildozer
+
+      - name: Build with Buildozer
+        run: |
+          export PATH=$HOME/.local/bin:$PATH
+          buildozer -v android debug
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
