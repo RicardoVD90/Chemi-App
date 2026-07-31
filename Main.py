@@ -189,9 +189,6 @@ class ChemieApp(App):
         # We binden direct aan de 'on_scroll_start' van de ScrollView zelf
         self.pdf_scroll_view.bind(on_scroll_start=self.handmatige_scroll_detectie)
 
-        self.pdf_overlay = Image(size_hint_y=None, allow_stretch=True, keep_ratio=True)
-        self.pdf_scroll_view.add_widget(self.pdf_overlay)
-        self.root.add_widget(self.pdf_scroll_view)
         self.pdf_controls = BoxLayout(orientation='horizontal', size_hint=(None, None), size=(550, 110),
                                       pos_hint={'center_x': 0.52, 'y': -0.2}, padding=10, spacing=20)
         self.btn_prev = Button(background_normal=os.path.join(ASSETS_DIR, 'vorige_knop.png'), size_hint=(None, None),
@@ -209,6 +206,7 @@ class ChemieApp(App):
 
         for widget in [self.btn_prev, self.btn_pauze, self.btn_next, self.btn_stop]:
             self.pdf_controls.add_widget(widget)
+        self.root.add_widget(self.pdf_scroll_view)
         self.root.add_widget(self.pdf_controls)
 
         Clock.schedule_once(self.start_intro_sequentie, 0.5)
@@ -379,7 +377,7 @@ class ChemieApp(App):
         self.systeem_bezet = True
         self.update_ui("PDF WEERGAVE", "#F5EFDB", KLEUR_TEKST_DONKER)
 
-        # Haal de paginateksten op uit de geladen PDF
+        # Haal de paginateksten op uit de geladen PDF via pypdf
         try:
             reader = PdfReader(pdf_pad)
             self.pdf_paginas_tekst = [p.extract_text() or "Geen tekst op deze pagina." for p in reader.pages]
@@ -388,7 +386,7 @@ class ChemieApp(App):
             self.pdf_paginas_tekst = ["Kan PDF tekst niet laden."]
             self.totaal_pdf_paginas = 1
 
-        # Vervang of configureer de overlay widget als een goed leesbaar tekstlabel voor de fabriek
+        # Configureer de overlay widget als een goed leesbaar tekstlabel voor de fabriek
         if not hasattr(self, 'pdf_text_label'):
             self.pdf_scroll_view.clear_widgets()
             self.pdf_text_label = Label(
@@ -408,48 +406,30 @@ class ChemieApp(App):
         Animation(pos_hint={'center_x': 0.52, 'y': 0.02}, duration=0.5).start(self.pdf_controls)
         self.scroll_pagina(0, self.totaal_pdf_paginas)
 
-        def start_sequentie(totaal):
-            self.pdf_overlay.width = Window.width * 0.9
-            self.pdf_overlay.height = self.pdf_overlay.width * 1.41
-            self.pdf_scroll_view.opacity = 1
-            Animation(pos_hint={'center_x': 0.52, 'y': 0.02}, duration=0.5).start(self.pdf_controls)
-            self.scroll_pagina(0, totaal)
-
-        threading.Thread(target=verwerk_pdf, daemon=True).start()
-
     def check_handmatig_scrollen(self, instance, value):
-        # Als er een animatie loopt, is de 'value' (scroll_y) aan het veranderen door de code.
-        # Als we NIET aan het pauzeren zijn, maar de animatie wordt plotseling gestopt door een aanraking,
-        # dan moeten we de pauze-status activeren.
-        pass  # Deze functie gebruiken we vooral als back-up
+        pass  # Back-up functie
 
     def handmatige_scroll_detectie(self, instance, touch):
-        # Zodra de gebruiker begint te scrollen:
         if self.huidige_pdf_anim:
             self.huidige_pdf_anim.stop(self.pdf_scroll_view)
             self.huidige_pdf_anim = None
 
-        # Zet op pauze en update de knop
         self.pdf_is_pauze = True
         self.btn_pauze.background_normal = os.path.join(ASSETS_DIR, 'verder_knop.png')
         self.log_status("HANDMATIG SCROLLEN: PAUZE")
 
-def scroll_pagina(self, index, totaal):
+    def scroll_pagina(self, index, totaal):
         if index >= totaal: 
             self.sluit_pdf()
             return
         
         self.huidige_pdf_index = index
-        # Zet de tekst van de huidige pagina in de viewer
         self.pdf_text_label.text = self.pdf_paginas_tekst[index]
-        
-        # Spring naar boven bij een nieuwe pagina
         self.pdf_scroll_view.scroll_y = 1.0
 
         if index == 0: 
             self.ui.opacity = 0
 
-        # Start automatische langzame doorlees-animatie (handfree)
         if not self.pdf_is_pauze:
             if self.huidige_pdf_anim:
                 self.huidige_pdf_anim.stop(self.pdf_scroll_view)
@@ -468,28 +448,22 @@ def scroll_pagina(self, index, totaal):
 
     def wissel_pagina(self, richting):
         nieuwe_index = self.huidige_pdf_index + richting
-        if 0 <= neue_index < self.totaal_pdf_paginas if 'neue_index' else 0 <= nieuwe_index < self.totaal_pdf_paginas:
+        if 0 <= nieuwe_index < self.totaal_pdf_paginas:
             if self.huidige_pdf_anim: 
                 self.huidige_pdf_anim.stop(self.pdf_scroll_view)
             self.scroll_pagina(nieuwe_index, self.totaal_pdf_paginas)
 
     def on_touch_down(self, touch):
-        # Check of we in het PDF scherm zitten
         if self.pdf_scroll_view.opacity > 0.5:
-            # Belangrijk: we checken of de touch BINNEN de scrollview valt
             if self.pdf_scroll_view.collide_point(*touch.pos):
-                # STOP de animatie direct
                 if self.huidige_pdf_anim:
                     self.huidige_pdf_anim.stop(self.pdf_scroll_view)
                     self.huidige_pdf_anim = None
 
-                # Forceer pauze status
                 self.pdf_is_pauze = True
-                # Verander de knop direct (gebruik het volledige pad naar de asset)
                 self.btn_pauze.background_normal = os.path.join(ASSETS_DIR, 'verder_knop.png')
                 self.log_status("HANDMATIG SCROLLEN GESTART")
 
-        # Dit zorgt ervoor dat de ScrollView de touch nog steeds krijgt om daadwerkelijk te kunnen scrollen
         return super(ChemieApp, self).on_touch_down(touch)
 
     def toggle_pauze(self, instance):
@@ -512,7 +486,6 @@ def scroll_pagina(self, index, totaal):
         self.nood_actief = False
         self.systeem_bezet = False
 
-        # Stop de timer-loop en het geluid
         if self.timer_event:
             self.timer_event.cancel()
             self.timer_event = None
@@ -520,11 +493,9 @@ def scroll_pagina(self, index, totaal):
         if self.alarm_sound:
             self.alarm_sound.stop()
 
-        # Verberg de stopknop en de voortgangsbalk
         Animation(pos_hint={'center_x': 0.5, 'y': -0.2}, opacity=0, duration=0.5).start(self.btn_nood_stop)
         self.progress.opacity = 0
 
-        # Reset de UI naar de standaard kleuren (Beige/Donkerblauw)
         self.update_ui("CHEMI", BG_STANDBY, KLEUR_TEKST_DONKER)
         self.log_status("SYSTEEM GEREED - NOODPROCEDURE GESTOPT")
 
@@ -536,7 +507,6 @@ def scroll_pagina(self, index, totaal):
         if self.alarm_sound:
             self.alarm_sound.stop()
 
-        # Optioneel: verander de tekst van de knop of verberg hem
         instance.text = "ALARM UITGEZET"
         instance.disabled = True
         self.log_status("ALARM HANDMATIG UITGEZET DOOR COLLEGA")
@@ -570,10 +540,7 @@ def scroll_pagina(self, index, totaal):
         Clock.schedule_once(change)
 
     def log_status(self, bericht):
-        # We printen het nog wel naar de PyCharm console voor jezelf
         print(f"STATUS: {bericht}")
-        # Maar we werken het label op het scherm niet meer bij
-        # self.status_label.text = bericht (deze regel zet je uit met een #)
 
     def _update_rect(self, instance, value):
         self.bg_rect.pos = instance.pos
@@ -609,7 +576,6 @@ def scroll_pagina(self, index, totaal):
                                 print(f"[LIVE UPDATE]: '{pdf_data['naam']}' succesvol toegevoegd aan het geheugen!")
 
             if nieuw_ontdekt and not self.systeem_bezet:
-                # Korte melding op het scherm dat de database is bijgewerkt
                 self.log_status("DATABASE AUTOMATISCH BIJGEWERKT")
 
     def analyseer_msds_pdf(self, pdf_pad):
