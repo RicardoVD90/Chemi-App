@@ -9,7 +9,7 @@ source.include_exts = py,png,jpg,kv,atlas,wav,mp3
 version = 0.1
 
 # BELANGRIJK: Alle bibliotheken die jouw app gebruikt, met gefixeerde Python 3.11 versie
-requirements = python3==3.11.9,hostpython3==3.11.9,kivy,pypdf,requests,certifi,urllib3,idna,charset-normalizer,pyjnius
+requirements = python3==3.10.11,hostpython3==3.10.11,kivy,pypdf,requests,certifi,urllib3,idna,charset-normalizer,pyjnius
 
 # Rechten voor de Android tablet
 android.permissions = RECORD_AUDIO,READ_EXTERNAL_STORAGE,WRITE_EXTERNAL_STORAGE
