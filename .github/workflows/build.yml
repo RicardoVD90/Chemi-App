@@ -43,6 +43,15 @@ jobs:
           pip install --upgrade pip
           pip install --user Cython==0.29.36 buildozer
 
+      - name: Fix python-for-android pip upgrade bug
+        run: |
+          # Map aanmaken en python-for-android handmatig klaarmaken
+          mkdir -p ~/.buildozer/android/platform
+          git clone https://github.com/kivy/python-for-android.git ~/.buildozer/android/platform/python-for-android
+          
+          # Patch de pip-installatie zodat deze een stabiele versie pakt in plaats van de kapotte nieuwste versie
+          sed -i 's/pip install -U pip/pip install -U "pip<24.0"/g' ~/.buildozer/android/platform/python-for-android/pythonforandroid/build.py
+
       - name: Build with Buildozer
         run: |
           export PATH=$HOME/.local/bin:$PATH
