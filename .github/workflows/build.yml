@@ -1,64 +1,280 @@
-name: Build Android APK
-
-on:
-  push:
-    branches: [ main, master ]
-
-jobs:
-  build:
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Set up Swap Space
-        uses: pierotofy/set-swap-space@master
-        with:
-          swap-size-gb: 10
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-              build-essential \
-              git \
-              python3 \
-              python3-pip \
-              python3-dev \
-              autoconf \
-              libtool \
-              pkg-config \
-              zlib1g-dev \
-              libncurses5-dev \
-              libncursesw5-dev \
-              libltdl-dev
-
-      - name: Install Buildozer and Cython
-        run: |
-          pip install --upgrade pip
-          pip install --user Cython==0.29.36 buildozer
-
-      - name: Fix python-for-android pip upgrade bug
-        run: |
-          # Map aanmaken en python-for-android handmatig klaarmaken
-          mkdir -p ~/.buildozer/android/platform
-          git clone https://github.com/kivy/python-for-android.git ~/.buildozer/android/platform/python-for-android
-          
-          # Patch de pip-installatie zodat deze een stabiele versie pakt in plaats van de kapotte nieuwste versie
-          sed -i 's/pip install -U pip/pip install -U "pip<24.0"/g' ~/.buildozer/android/platform/python-for-android/pythonforandroid/build.py
-
-      - name: Build with Buildozer
-        run: |
-          export PATH=$HOME/.local/bin:$PATH
-          buildozer -v android debug
-
-      - name: Upload APK Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ChemieApp-APK
-          path: bin/*.apk
+2026-09-14T14:17:44.1561414Z stty: 'standard input': Inappropriate ioctl for device
+2026-09-14T14:17:44.1564436Z [1m[90m[DEBUG][39m[0m:   [90m->[0m running find . -iname *.so -exec /home/runner/.buildozer/android/platform/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip --strip-unneeded {} ;[0m
+2026-09-14T14:17:46.9529361Z [1m[INFO][0m:    [36m<- directory context /home/runner/work/Chemi-App/Chemi-App/.buildozer/android/platform/build-arm64-v8a_armeabi-v7a/build[39m
+2026-09-14T14:17:46.9530656Z [1m[INFO][0m:    [36m<- directory context /home/runner/work/Chemi-App/Chemi-App/.buildozer/android/platform/python-for-android[39m
+2026-09-14T14:17:46.9531645Z [1m[INFO][0m:    *** PYTHON PACKAGE / PROJECT INSTALL STAGE FOR ARCH: arm64-v8a ***
+2026-09-14T14:17:46.9559341Z stty: 'standard input': Inappropriate ioctl for device
+2026-09-14T14:17:46.9563558Z [1m[90m[DEBUG][39m[0m:   [90m->[0m running pip3 install certifi chardet charset-normalizer filetype idna pypdf requests six urllib3 --dry-run --break-system-packages --ignore-installed --disable-pip-version-check --only-binary=:all: --report /tmp/tmpxdqqfksn -q --platform=android_21_arm64_v8a --platform=android_21_aarch64 --python-version 3.10.11[0m
+2026-09-14T14:17:47.5157510Z [1m[INFO][0m:    Extra resolved pure python dependencies :
+2026-09-14T14:17:47.5157940Z [1m[INFO][0m:     
+2026-09-14T14:17:47.5158497Z [1m[INFO][0m:      [32mcharset-normalizer[37m : [1m3.5.1[0m
+2026-09-14T14:17:47.5160130Z [1m[INFO][0m:      [32mtyping_extensions[37m : [1m4.16.0[0m
+2026-09-14T14:17:47.5160495Z [1m[INFO][0m:     
+2026-09-14T14:17:47.5190483Z [1m[INFO][0m:    The requirements (certifi, chardet, charset-normalizer, filetype, idna, pypdf, requests, six, urllib3, https://files.pythonhosted.org/packages/cc/61/d01fc49b8dea277640b55a9e15960dbca9fdc8c9fde18e572d39c59f4019/charset_normalizer-3.5.1-py3-none-any.whl, https://files.pythonhosted.org/packages/49/d3/b8441a820a491ddfc024b0b0cf0393375b75ea13866d9c66727e54c2fc80/typing_extensions-4.16.0-py3-none-any.whl) don't have recipes, attempting to install them with pip
+2026-09-14T14:17:47.5193020Z [1m[INFO][0m:    If this fails, it may mean that the module has compiled components and needs a recipe.
+2026-09-14T14:17:47.5193744Z [1m[INFO][0m:    [36m-> directory context /home/runner/work/Chemi-App/Chemi-App/.buildozer/android/platform/build-arm64-v8a_armeabi-v7a/build[39m
+2026-09-14T14:17:47.5209221Z stty: 'standard input': Inappropriate ioctl for device
+2026-09-14T14:17:47.5211751Z [1m[90m[DEBUG][39m[0m:   [90m->[0m running python -m venv venv[0m
+2026-09-14T14:17:50.6729887Z [1m[INFO][0m:    Upgrade pip to latest version
+2026-09-14T14:17:50.6748852Z stty: 'standard input': Inappropriate ioctl for device
+2026-09-14T14:17:50.6751762Z [1m[90m[DEBUG][39m[0m:   [90m->[0m running bash -c source venv/bin/activate && pip install -U pip[0m
+2026-09-14T14:17:50.8599771Z [1m[90m[DEBUG][39m[0m:   	Traceback (most recent call last):
+2026-09-14T14:17:50.8603391Z [1m[90m[DEBUG][39m[0m:   	  File "/home/runner/work/Chemi-App/Chemi-App/.buildozer/android/platform/build-arm64-v8a_armeabi-v7a/build/venv/bin/pip", line 5, in <module>
+2026-09-14T14:17:50.8604092Z [1m[90m[DEBUG][39m[0m:   	    from pip._internal.cli.main import main
+2026-09-14T14:17:50.8605037Z [1m[90m[DEBUG][39m[0m:   	  File "/home/runner/work/Chemi-App/Chemi-App/.buildozer/android/platform/build-arm64-v8a_armeabi-v7a/build/venv/lib/python3.10/site-packages/pip/_internal/cli/main.py", line 9, in <module>
+2026-09-14T14:17:50.8605814Z [1m[90m[DEBUG][39m[0m:   	    from pip._internal.cli.autocompletion import autocomplete
+2026-09-14T14:17:50.8606737Z [1m[90m[DEBUG][39m[0m:   	  File "/home/runner/work/Chemi-App/Chemi-App/.buildozer/android/platform/build-arm64-v8a_armeabi-v7a/build/venv/lib/python3.10/site-packages/pip/_internal/cli/autocompletion.py", line 10, in <module>
+2026-09-14T14:17:50.8607791Z [1m[90m[DEBUG][39m[0m:   	    from pip._internal.cli.main_parser import create_main_parser
+2026-09-14T14:17:50.8608636Z [1m[90m[DEBUG][39m[0m:   	  File "/home/runner/work/Chemi-App/Chemi-App/.buildozer/android/platform/build-arm64-v8a_armeabi-v7a/build/venv/lib/python3.10/site-packages/pip/_internal/cli/main_parser.py", line 9, in <module>
+2026-09-14T14:17:50.8609432Z [1m[90m[DEBUG][39m[0m:   	    from pip._internal.build_env import get_runnable_pip
+2026-09-14T14:17:50.8610392Z [1m[90m[DEBUG][39m[0m:   	  File "/home/runner/work/Chemi-App/Chemi-App/.buildozer/android/platform/build-arm64-v8a_armeabi-v7a/build/venv/lib/python3.10/site-packages/pip/_internal/build_env/__init__.py", line 8, in <module>
+2026-09-14T14:17:50.8611195Z [1m[90m[DEBUG][39m[0m:   	    from pip._internal.build_env.installer import (
+2026-09-14T14:17:50.8612028Z [1m[90m[DEBUG][39m[0m:   	  File "/home/runner/work/Chemi-App/Chemi-App/.buildozer/android/platform/build-arm64-v8a_armeabi-v7a/build/venv/lib/python3.10/site-packages/pip/_internal/build_env/installer.py", line 13, in <module>
+2026-09-14T14:17:50.8612847Z [1m[90m[DEBUG][39m[0m:   	    from pip._internal.cli.spinners import open_rich_spinner, open_spinner
+2026-09-14T14:17:50.8613866Z [1m[90m[DEBUG][39m[0m:   	ImportError: cannot import name 'open_rich_spinner' from 'pip._internal.cli.spinners' (/home/runner/work/Chemi-App/Chemi-App/.buildozer/android/platform/build-arm64-v8a_armeabi-v7a/build/venv/lib/python3.10/site-packages/pip/_internal/cli/spinners.py)
+2026-09-14T14:17:50.8912630Z Exception in thread background thread for pid 93820:
+2026-09-14T14:17:50.8913230Z Traceback (most recent call last):
+2026-09-14T14:17:50.8913924Z   File "/opt/hostedtoolcache/Python/3.10.21/x64/lib/python3.10/threading.py", line 1016, in _bootstrap_inner
+2026-09-14T14:17:50.8914984Z     self.run()
+2026-09-14T14:17:50.8915371Z   File "/opt/hostedtoolcache/Python/3.10.21/x64/lib/python3.10/threading.py", line 953, in run
+2026-09-14T14:17:50.8917328Z     self._target(*self._args, **self._kwargs)
+2026-09-14T14:17:50.8917766Z   File "/home/runner/.local/lib/python3.10/site-packages/sh/__init__.py", line 1709, in wrap
+2026-09-14T14:17:50.8926557Z     fn(*rgs, **kwargs)
+2026-09-14T14:17:50.8927282Z   File "/home/runner/.local/lib/python3.10/site-packages/sh/__init__.py", line 2720, in background_thread
+2026-09-14T14:17:50.8927898Z     handle_exit_code(exit_code)
+2026-09-14T14:17:50.8928381Z   File "/home/runner/.local/lib/python3.10/site-packages/sh/__init__.py", line 2411, in fn
+2026-09-14T14:17:50.8928984Z     return self.command.handle_command_exit_code(exit_code)
+2026-09-14T14:17:50.8929448Z   File "/home/runner/.local/lib/python3.10/site-packages/sh/__init__.py", line 820, in handle_command_exit_code
+2026-09-14T14:17:50.8930082Z     raise exc
+2026-09-14T14:17:50.8930253Z sh.ErrorReturnCode_1: 
+2026-09-14T14:17:50.8930372Z 
+2026-09-14T14:17:50.8930525Z   RAN: /usr/bin/bash -c 'source venv/bin/activate && pip install -U pip'
+2026-09-14T14:17:50.8930740Z 
+2026-09-14T14:17:50.8930810Z   STDOUT:
+2026-09-14T14:17:50.8931053Z Traceback (most recent call last):
+2026-09-14T14:17:50.8931544Z   File "/home/runner/work/Chemi-App/Chemi-App/.buildozer/android/platform/build-arm64-v8a_armeabi-v7a/build/venv/bin/pip", line 5, in <module>
+2026-09-14T14:17:50.8932033Z     from pip._internal.cli.main import main
+2026-09-14T14:17:50.8932719Z   File "/home/runner/work/Chemi-App/Chemi-App/.buildozer/android/platform/build-arm64-v8a_armeabi-v7a/build/venv/lib/python3.10/site-packages/pip/_internal/cli/main.py", line 9, in <module>
+2026-09-14T14:17:50.8933368Z     from pip._internal.cli.autocompletion import autocomplete
+2026-09-14T14:17:50.8934036Z   File "/home/runner/work/Chemi-App/Chemi-App/.buildozer/android/platform/build-arm64-v8a_armeabi-v7a/build/venv/lib/python3.10/site-packages/pip/_internal/cli/autocompletion.py", line 10, in <module>
+2026-09-14T14:17:50.8934691Z     from pip._internal.cli.main_parser import create_main_parser
+2026-09-14T14:17:50.8935346Z   File "/home/runner/work/Chemi-App/Chemi-App/.buildozer/android/platform/build-arm64-v8a_armeabi-v7a/build/venv/lib/python3.10/site-packages/pip/_internal/cli/main_parser.py", line 9, in <module>
+2026-09-14T14:17:50.8935964Z     from pip._internal.build_env import get_runnable_pip
+2026-09-14T14:17:50.8936608Z   File "/home/runner/work/Chemi-App/Chemi-App/.buildozer/android/platform/build-arm64-v8a_armeabi-v7a/build/venv/lib/python3.10/site-packages/pip/_internal/build_env/__init__.py", line 8, in <module>
+2026-09-14T14:17:50.8937479Z     from pip._internal.build_env.installer import (
+2026-09-14T14:17:50.8938112Z   File "/home/runner/work/Chemi-App/Chemi-App/.buildozer/android/platform/build-arm64-v8a_armeabi-v7a/build/venv/lib/python3.10/site-packages/pip/_internal/build_env/installer.py", line 13, in <module>
+2026-09-14T14:17:50.8938788Z     from pip._internal.cli.spinners import open_rich_spinner, open_spinner
+2026-09-14T14:17:50.8939646Z ImportError: cannot import name 'open_rich_spinner' from 'pip._internal.cli.spinners' (/home/runner/work/Chemi-App/Chemi-App/.buildozer/android/platform/build-arm64-v8a_armeabi-v7a/build/venv/lib/python3.10/site-packages/pip/_internal/cli/spinners.py)
+2026-09-14T14:17:50.8940314Z 
+2026-09-14T14:17:50.8940318Z 
+2026-09-14T14:17:50.8940386Z   STDERR:
+2026-09-14T14:17:50.8940468Z 
+2026-09-14T14:17:50.8940568Z Traceback (most recent call last):
+2026-09-14T14:17:50.8940944Z   File "/opt/hostedtoolcache/Python/3.10.21/x64/lib/python3.10/runpy.py", line 196, in _run_module_as_main
+2026-09-14T14:17:50.8982683Z     return _run_code(code, main_globals, None,
+2026-09-14T14:17:50.8983363Z   File "/opt/hostedtoolcache/Python/3.10.21/x64/lib/python3.10/runpy.py", line 86, in _run_code
+2026-09-14T14:17:50.8983964Z     exec(code, run_globals)
+2026-09-14T14:17:50.8986560Z   File "/home/runner/work/Chemi-App/Chemi-App/.buildozer/android/platform/python-for-android/pythonforandroid/toolchain.py", line 1290, in <module>
+2026-09-14T14:17:50.8987405Z     main()
+2026-09-14T14:17:50.8988091Z   File "/home/runner/work/Chemi-App/Chemi-App/.buildozer/android/platform/python-for-android/pythonforandroid/entrypoints.py", line 18, in main
+2026-09-14T14:17:50.8998304Z     ToolchainCL()
+2026-09-14T14:17:50.8999145Z   File "/home/runner/work/Chemi-App/Chemi-App/.buildozer/android/platform/python-for-android/pythonforandroid/toolchain.py", line 721, in __init__
+2026-09-14T14:17:50.8999991Z     getattr(self, command)(args)
+2026-09-14T14:17:50.9000847Z   File "/home/runner/work/Chemi-App/Chemi-App/.buildozer/android/platform/python-for-android/pythonforandroid/toolchain.py", line 104, in wrapper_func
+2026-09-14T14:17:50.9001677Z     build_dist_from_args(ctx, dist, args)
+2026-09-14T14:17:50.9002547Z   File "/home/runner/work/Chemi-App/Chemi-App/.buildozer/android/platform/python-for-android/pythonforandroid/toolchain.py", line 163, in build_dist_from_args
+2026-09-14T14:17:50.9003698Z     build_recipes(build_order, python_modules, ctx,
+2026-09-14T14:17:50.9004520Z   File "/home/runner/work/Chemi-App/Chemi-App/.buildozer/android/platform/python-for-android/pythonforandroid/build.py", line 554, in build_recipes
+2026-09-14T14:17:50.9005455Z     run_pymodules_install(
+2026-09-14T14:17:50.9006292Z   File "/home/runner/work/Chemi-App/Chemi-App/.buildozer/android/platform/python-for-android/pythonforandroid/build.py", line 877, in run_pymodules_install
+2026-09-14T14:17:50.9007356Z     shprint(sh.bash, '-c', (
+2026-09-14T14:17:50.9008128Z   File "/home/runner/work/Chemi-App/Chemi-App/.buildozer/android/platform/python-for-android/pythonforandroid/logger.py", line 174, in shprint
+2026-09-14T14:17:50.9008899Z     for line in output:
+2026-09-14T14:17:50.9009406Z   File "/home/runner/.local/lib/python3.10/site-packages/sh/__init__.py", line 876, in __next__
+2026-09-14T14:17:50.9009958Z     self.wait()
+2026-09-14T14:17:50.9010428Z   File "/home/runner/.local/lib/python3.10/site-packages/sh/__init__.py", line 793, in wait
+2026-09-14T14:17:50.9011012Z     self.handle_command_exit_code(exit_code)
+2026-09-14T14:17:50.9011665Z   File "/home/runner/.local/lib/python3.10/site-packages/sh/__init__.py", line 820, in handle_command_exit_code
+2026-09-14T14:17:50.9012274Z     raise exc
+2026-09-14T14:17:50.9012513Z sh.ErrorReturnCode_1: 
+2026-09-14T14:17:50.9012690Z 
+2026-09-14T14:17:50.9012918Z   RAN: /usr/bin/bash -c 'source venv/bin/activate && pip install -U pip'
+2026-09-14T14:17:50.9013266Z 
+2026-09-14T14:17:50.9013368Z   STDOUT:
+2026-09-14T14:17:50.9013621Z Traceback (most recent call last):
+2026-09-14T14:17:50.9014474Z   File "/home/runner/work/Chemi-App/Chemi-App/.buildozer/android/platform/build-arm64-v8a_armeabi-v7a/build/venv/bin/pip", line 5, in <module>
+2026-09-14T14:17:50.9015199Z     from pip._internal.cli.main import main
+2026-09-14T14:17:50.9015927Z   File "/home/runner/work/Chemi-App/Chemi-App/.buildozer/android/platform/build-arm64-v8a_armeabi-v7a/build/venv/lib/python3.10/site-packages/pip/_internal/cli/main.py", line 9, in <module>
+2026-09-14T14:17:50.9016620Z     from pip._internal.cli.autocompletion import autocomplete
+2026-09-14T14:17:50.9017516Z   File "/home/runner/work/Chemi-App/Chemi-App/.buildozer/android/platform/build-arm64-v8a_armeabi-v7a/build/venv/lib/python3.10/site-packages/pip/_internal/cli/autocompletion.py", line 10, in <module>
+2026-09-14T14:17:50.9018196Z     from pip._internal.cli.main_parser import create_main_parser
+2026-09-14T14:17:50.9018866Z   File "/home/runner/work/Chemi-App/Chemi-App/.buildozer/android/platform/build-arm64-v8a_armeabi-v7a/build/venv/lib/python3.10/site-packages/pip/_internal/cli/main_parser.py", line 9, in <module>
+2026-09-14T14:17:50.9019511Z     from pip._internal.build_env import get_runnable_pip
+2026-09-14T14:17:50.9020350Z   File "/home/runner/work/Chemi-App/Chemi-App/.buildozer/android/platform/build-arm64-v8a_armeabi-v7a/build/venv/lib/python3.10/site-packages/pip/_internal/build_env/__init__.py", line 8, in <module>
+2026-09-14T14:17:50.9020972Z     from pip._internal.build_env.installer import (
+2026-09-14T14:17:50.9021607Z   File "/home/runner/work/Chemi-App/Chemi-App/.buildozer/android/platform/build-arm64-v8a_armeabi-v7a/build/venv/lib/python3.10/site-packages/pip/_internal/build_env/installer.py", line 13, in <module>
+2026-09-14T14:17:50.9022271Z     from pip._internal.cli.spinners import open_rich_spinner, open_spinner
+2026-09-14T14:17:50.9023092Z ImportError: cannot import name 'open_rich_spinner' from 'pip._internal.cli.spinners' (/home/runner/work/Chemi-App/Chemi-App/.buildozer/android/platform/build-arm64-v8a_armeabi-v7a/build/venv/lib/python3.10/site-packages/pip/_internal/cli/spinners.py)
+2026-09-14T14:17:50.9023745Z 
+2026-09-14T14:17:50.9023749Z 
+2026-09-14T14:17:50.9023820Z   STDERR:
+2026-09-14T14:17:50.9023907Z 
+2026-09-14T14:17:51.9008138Z [0m[1;34m# Android packages installation done.[0m
+2026-09-14T14:17:51.9010070Z [0m[1;30m# Run '/opt/hostedtoolcache/Python/3.10.21/x64/bin/python -m pythonforandroid.toolchain aab -h --color=always --storage-dir=/home/runner/work/Chemi-App/Chemi-App/.buildozer/android/platform/build-arm64-v8a_armeabi-v7a --ndk-api=21 --ignore-setup-py --debug' ...[0m
+2026-09-14T14:17:51.9011261Z [0m[1;30m# Cwd /home/runner/work/Chemi-App/Chemi-App/.buildozer/android/platform/python-for-android[0m
+2026-09-14T14:17:51.9011700Z [0m[1;34m# Check application requirements[0m
+2026-09-14T14:17:51.9012001Z [0m[1;34m# Compile platform[0m
+2026-09-14T14:17:51.9013571Z [0m[1;30m# Run '/opt/hostedtoolcache/Python/3.10.21/x64/bin/python -m pythonforandroid.toolchain create --dist_name=chemieapp --bootstrap=sdl2 --requirements=python3==3.10.11,hostpython3==3.10.11,kivy,pypdf,requests,certifi,urllib3,idna,charset-normalizer,pyjnius --arch=arm64-v8a --arch=armeabi-v7a --copy-libs --color=always --storage-dir=/home/runner/work/Chemi-App/Chemi-App/.buildozer/android/platform/build-arm64-v8a_armeabi-v7a --ndk-api=21 --ignore-setup-py --debug' ...[0m
+2026-09-14T14:17:51.9015158Z [0m[1;30m# Cwd /home/runner/work/Chemi-App/Chemi-App/.buildozer/android/platform/python-for-android[0m
+2026-09-14T14:17:51.9016942Z [0m[1;31m# Command failed: ('/opt/hostedtoolcache/Python/3.10.21/x64/bin/python', '-m', 'pythonforandroid.toolchain', 'create', '--dist_name=chemieapp', '--bootstrap=sdl2', '--requirements=python3==3.10.11,hostpython3==3.10.11,kivy,pypdf,requests,certifi,urllib3,idna,charset-normalizer,pyjnius', '--arch=arm64-v8a', '--arch=armeabi-v7a', '--copy-libs', '--color=always', '--storage-dir=/home/runner/work/Chemi-App/Chemi-App/.buildozer/android/platform/build-arm64-v8a_armeabi-v7a', '--ndk-api=21', '--ignore-setup-py', '--debug')[0m
+2026-09-14T14:17:51.9019011Z [0m[1;31m# Error code: 1[0m
+2026-09-14T14:17:51.9019477Z [0m[1;31m# ENVIRONMENT:[0m
+2026-09-14T14:17:51.9019797Z [0m[1;31m#     SHELL = '/bin/bash'[0m
+2026-09-14T14:17:51.9020256Z [0m[1;31m#     SELENIUM_JAR_PATH = '/usr/share/java/selenium-server.jar'[0m
+2026-09-14T14:17:51.9020748Z [0m[1;31m#     CONDA = '/usr/share/miniconda'[0m
+2026-09-14T14:17:51.9021235Z [0m[1;31m#     GITHUB_WORKSPACE = '/home/runner/work/Chemi-App/Chemi-App'[0m
+2026-09-14T14:17:51.9021766Z [0m[1;31m#     JAVA_HOME_11_X64 = '/usr/lib/jvm/temurin-11-jdk-amd64'[0m
+2026-09-14T14:17:51.9022268Z [0m[1;31m#     JAVA_HOME_25_X64 = '/usr/lib/jvm/temurin-25-jdk-amd64'[0m
+2026-09-14T14:17:51.9022695Z [0m[1;31m#     PKG_CONFIG_PATH = '/opt/hostedtoolcache/Python/3.10.21/x64/lib/pkgconfig'[0m
+2026-09-14T14:17:51.9023265Z [0m[1;31m#     GITHUB_PATH = '/home/runner/work/_temp/_runner_file_commands/add_path_2dd16224-aa8b-4503-9035-d5f14c7f1998'[0m
+2026-09-14T14:17:51.9023719Z [0m[1;31m#     GITHUB_ACTION = '__run_4'[0m
+2026-09-14T14:17:51.9024029Z [0m[1;31m#     JAVA_HOME = '/usr/lib/jvm/temurin-11-jdk-amd64'[0m
+2026-09-14T14:17:51.9024325Z [0m[1;31m#     GITHUB_RUN_NUMBER = '22'[0m
+2026-09-14T14:17:51.9024613Z [0m[1;31m#     RUNNER_NAME = 'GitHub Actions 1000000021'[0m
+2026-09-14T14:17:51.9024932Z [0m[1;31m#     GRADLE_HOME = '/usr/share/gradle-9.7.1'[0m
+2026-09-14T14:17:51.9025253Z [0m[1;31m#     GITHUB_REPOSITORY_OWNER_ID = '311408213'[0m
+2026-09-14T14:17:51.9025620Z [0m[1;31m#     ACTIONS_RUNNER_ACTION_ARCHIVE_CACHE = '/opt/actionarchivecache'[0m
+2026-09-14T14:17:51.9025986Z [0m[1;31m#     XDG_CONFIG_HOME = '/home/runner/.config'[0m
+2026-09-14T14:17:51.9026337Z [0m[1;31m#     Python_ROOT_DIR = '/opt/hostedtoolcache/Python/3.10.21/x64'[0m
+2026-09-14T14:17:51.9026682Z [0m[1;31m#     DOTNET_SKIP_FIRST_TIME_EXPERIENCE = '1'[0m
+2026-09-14T14:17:51.9026958Z [0m[1;31m#     ANT_HOME = '/usr/share/ant'[0m
+2026-09-14T14:17:51.9027490Z [0m[1;31m#     JAVA_HOME_8_X64 = '/usr/lib/jvm/temurin-8-jdk-amd64'[0m
+2026-09-14T14:17:51.9027821Z [0m[1;31m#     GITHUB_TRIGGERING_ACTOR = 'RicardoVD90'[0m
+2026-09-14T14:17:51.9028170Z [0m[1;31m#     pythonLocation = '/opt/hostedtoolcache/Python/3.10.21/x64'[0m
+2026-09-14T14:17:51.9028622Z [0m[1;31m#     GITHUB_REF_TYPE = 'branch'[0m
+2026-09-14T14:17:51.9028916Z [0m[1;31m#     HOMEBREW_CLEANUP_PERIODIC_FULL_DAYS = '3650'[0m
+2026-09-14T14:17:51.9029252Z [0m[1;31m#     ACTIONS_RUNNER_RETURN_JOB_RESULT_FOR_HOSTED = '1'[0m
+2026-09-14T14:17:51.9029622Z [0m[1;31m#     ANDROID_NDK = '/usr/local/lib/android/sdk/ndk/27.3.13750724'[0m
+2026-09-14T14:17:51.9030041Z [0m[1;31m#     BOOTSTRAP_HASKELL_NONINTERACTIVE = '1'[0m
+2026-09-14T14:17:51.9030381Z [0m[1;31m#     PWD = '/home/runner/work/Chemi-App/Chemi-App'[0m
+2026-09-14T14:17:51.9030699Z [0m[1;31m#     PIPX_BIN_DIR = '/opt/pipx_bin'[0m
+2026-09-14T14:17:51.9031038Z [0m[1;31m#     LOGNAME = 'runner'[0m
+2026-09-14T14:17:51.9031561Z [0m[1;31m#     GITHUB_ARTIFACTS_LIST = '/home/runner/work/_temp/_runner_file_commands/artifacts_list_2dd16224-aa8b-4503-9035-d5f14c7f1998'[0m
+2026-09-14T14:17:51.9032053Z [0m[1;31m#     GITHUB_REPOSITORY_ID = '1318309100'[0m
+2026-09-14T14:17:51.9032319Z [0m[1;31m#     GITHUB_ACTIONS = 'true'[0m
+2026-09-14T14:17:51.9032602Z [0m[1;31m#     USE_BAZEL_FALLBACK_VERSION = 'silent:'[0m
+2026-09-14T14:17:51.9032979Z [0m[1;31m#     ANDROID_NDK_LATEST_HOME = '/usr/local/lib/android/sdk/ndk/29.0.14206865'[0m
+2026-09-14T14:17:51.9033324Z [0m[1;31m#     SYSTEMD_EXEC_PID = '1582'[0m
+2026-09-14T14:17:51.9033652Z [0m[1;31m#     GITHUB_SHA = '3f0a15782beceeb52f6c94e5d0e70242eb163f03'[0m
+2026-09-14T14:17:51.9034140Z [0m[1;31m#     GITHUB_WORKFLOW_REF = 'RicardoVD90/Chemi-App/.github/workflows/build.yml@refs/heads/main'[0m
+2026-09-14T14:17:51.9034614Z [0m[1;31m#     POWERSHELL_DISTRIBUTION_CHANNEL = 'GitHub-Actions-Linux'[0m
+2026-09-14T14:17:51.9034959Z [0m[1;31m#     RUNNER_ENVIRONMENT = 'github-hosted'[0m
+2026-09-14T14:17:51.9035248Z [0m[1;31m#     DOTNET_MULTILEVEL_LOOKUP = '0'[0m
+2026-09-14T14:17:51.9035591Z [0m[1;31m#     GITHUB_REF = 'refs/heads/main'[0m
+2026-09-14T14:17:51.9035840Z [0m[1;31m#     RUNNER_OS = 'Linux'[0m
+2026-09-14T14:17:51.9036091Z [0m[1;31m#     GITHUB_REF_PROTECTED = 'false'[0m
+2026-09-14T14:17:51.9036346Z [0m[1;31m#     HOME = '/home/runner'[0m
+2026-09-14T14:17:51.9036654Z [0m[1;31m#     GITHUB_API_URL = 'https://api.github.com'[0m
+2026-09-14T14:17:51.9036945Z [0m[1;31m#     LANG = 'C.UTF-8'[0m
+2026-09-14T14:17:51.9037430Z [0m[1;31m#     GOROOT_1_25_X64 = '/opt/hostedtoolcache/go/1.25.14/x64'[0m
+2026-09-14T14:17:51.9037844Z [0m[1;31m#     RUNNER_TRACKING_ID = 'github_bde8918a-0172-4ac3-a336-ce821ef8ea48'[0m
+2026-09-14T14:17:51.9038174Z [0m[1;31m#     RUNNER_ARCH = 'X64'[0m
+2026-09-14T14:17:51.9038439Z [0m[1;31m#     RUNNER_TEMP = '/home/runner/work/_temp'[0m
+2026-09-14T14:17:51.9038939Z [0m[1;31m#     GITHUB_STATE = '/home/runner/work/_temp/_runner_file_commands/save_state_2dd16224-aa8b-4503-9035-d5f14c7f1998'[0m
+2026-09-14T14:17:51.9039418Z [0m[1;31m#     EDGEWEBDRIVER = '/usr/local/share/edge_driver'[0m
+2026-09-14T14:17:51.9039771Z [0m[1;31m#     JAVA_HOME_21_X64 = '/usr/lib/jvm/temurin-21-jdk-amd64'[0m
+2026-09-14T14:17:51.9040275Z [0m[1;31m#     GITHUB_ENV = '/home/runner/work/_temp/_runner_file_commands/set_env_2dd16224-aa8b-4503-9035-d5f14c7f1998'[0m
+2026-09-14T14:17:51.9040799Z [0m[1;31m#     GITHUB_EVENT_PATH = '/home/runner/work/_temp/_github_workflow/event.json'[0m
+2026-09-14T14:17:51.9041197Z [0m[1;31m#     INVOCATION_ID = 'b714eccc8750431382408e835651e8cd'[0m
+2026-09-14T14:17:51.9041501Z [0m[1;31m#     GITHUB_EVENT_NAME = 'push'[0m
+2026-09-14T14:17:51.9041769Z [0m[1;31m#     GITHUB_RUN_ID = '34853208885'[0m
+2026-09-14T14:17:51.9042078Z [0m[1;31m#     JAVA_HOME_17_X64 = '/usr/lib/jvm/temurin-17-jdk-amd64'[0m
+2026-09-14T14:17:51.9042464Z [0m[1;31m#     ANDROID_NDK_HOME = '/usr/local/lib/android/sdk/ndk/27.3.13750724'[0m
+2026-09-14T14:17:51.9043038Z [0m[1;31m#     GITHUB_STEP_SUMMARY = '/home/runner/work/_temp/_runner_file_commands/step_summary_2dd16224-aa8b-4503-9035-d5f14c7f1998'[0m
+2026-09-14T14:17:51.9043514Z [0m[1;31m#     HOMEBREW_NO_AUTO_UPDATE = '1'[0m
+2026-09-14T14:17:51.9043779Z [0m[1;31m#     GITHUB_ACTOR = 'RicardoVD90'[0m
+2026-09-14T14:17:51.9044135Z [0m[1;31m#     NVM_DIR = '/home/runner/.nvm'[0m
+2026-09-14T14:17:51.9044378Z [0m[1;31m#     SGX_AESM_ADDR = '1'[0m
+2026-09-14T14:17:51.9044615Z [0m[1;31m#     GITHUB_RUN_ATTEMPT = '1'[0m
+2026-09-14T14:17:51.9044904Z [0m[1;31m#     ANDROID_HOME = '/usr/local/lib/android/sdk'[0m
+2026-09-14T14:17:51.9045313Z [0m[1;31m#     GITHUB_GRAPHQL_URL = 'https://api.github.com/graphql'[0m
+2026-09-14T14:17:51.9045630Z [0m[1;31m#     ACCEPT_EULA = 'Y'[0m
+2026-09-14T14:17:51.9045869Z [0m[1;31m#     USER = 'runner'[0m
+2026-09-14T14:17:51.9046513Z [0m[1;31m#     PSModulePath = '/root/.local/share/powershell/Modules:/usr/local/share/powershell/Modules:/opt/microsoft/powershell/7/Modules:/usr/share/az_15.6.1'[0m
+2026-09-14T14:17:51.9047100Z [0m[1;31m#     GITHUB_SERVER_URL = 'https://github.com'[0m
+2026-09-14T14:17:51.9047478Z [0m[1;31m#     PIPX_HOME = '/opt/pipx'[0m
+2026-09-14T14:17:51.9047772Z [0m[1;31m#     GECKOWEBDRIVER = '/usr/local/share/gecko_driver'[0m
+2026-09-14T14:17:51.9048146Z [0m[1;31m#     CHROMEWEBDRIVER = '/usr/local/share/chromedriver-linux64'[0m
+2026-09-14T14:17:51.9048455Z [0m[1;31m#     SHLVL = '1'[0m
+2026-09-14T14:17:51.9048721Z [0m[1;31m#     ANDROID_SDK_ROOT = '/usr/local/lib/android/sdk'[0m
+2026-09-14T14:17:51.9049078Z [0m[1;31m#     VCPKG_INSTALLATION_ROOT = '/usr/local/share/vcpkg'[0m
+2026-09-14T14:17:51.9049386Z [0m[1;31m#     GITHUB_ACTOR_ID = '311408213'[0m
+2026-09-14T14:17:51.9049787Z [0m[1;31m#     ACTIONS_ORCHESTRATION_ID = '53c4e5e0-ba2c-4547-86cf-1ebca572bfed.build.__default'[0m
+2026-09-14T14:17:51.9050202Z [0m[1;31m#     RUNNER_TOOL_CACHE = '/opt/hostedtoolcache'[0m
+2026-09-14T14:17:51.9050501Z [0m[1;31m#     ImageVersion = '20260907.292.1'[0m
+2026-09-14T14:17:51.9050903Z [0m[1;31m#     Python3_ROOT_DIR = '/opt/hostedtoolcache/Python/3.10.21/x64'[0m
+2026-09-14T14:17:51.9051225Z [0m[1;31m#     DOTNET_NOLOGO = '1'[0m
+2026-09-14T14:17:51.9051692Z [0m[1;31m#     GITHUB_ARTIFACTS = '/home/runner/work/_temp/_runner_file_commands/artifacts_2dd16224-aa8b-4503-9035-d5f14c7f1998'[0m
+2026-09-14T14:17:51.9052238Z [0m[1;31m#     GITHUB_WORKFLOW_SHA = '3f0a15782beceeb52f6c94e5d0e70242eb163f03'[0m
+2026-09-14T14:17:51.9052627Z [0m[1;31m#     GOROOT_1_24_X64 = '/opt/hostedtoolcache/go/1.24.13/x64'[0m
+2026-09-14T14:17:51.9052932Z [0m[1;31m#     GITHUB_REF_NAME = 'main'[0m
+2026-09-14T14:17:51.9053177Z [0m[1;31m#     GITHUB_JOB = 'build'[0m
+2026-09-14T14:17:51.9053503Z [0m[1;31m#     LD_LIBRARY_PATH = '/opt/hostedtoolcache/Python/3.10.21/x64/lib'[0m
+2026-09-14T14:17:51.9053846Z [0m[1;31m#     XDG_RUNTIME_DIR = '/run/user/1001'[0m
+2026-09-14T14:17:51.9054160Z [0m[1;31m#     AZURE_EXTENSION_DIR = '/opt/az/azcliextensions'[0m
+2026-09-14T14:17:51.9054511Z [0m[1;31m#     GOROOT_1_26_X64 = '/opt/hostedtoolcache/go/1.26.8/x64'[0m
+2026-09-14T14:17:51.9054854Z [0m[1;31m#     GITHUB_REPOSITORY = 'RicardoVD90/Chemi-App'[0m
+2026-09-14T14:17:51.9055216Z [0m[1;31m#     Python2_ROOT_DIR = '/opt/hostedtoolcache/Python/3.10.21/x64'[0m
+2026-09-14T14:17:51.9055567Z [0m[1;31m#     CHROME_BIN = '/usr/bin/google-chrome'[0m
+2026-09-14T14:17:51.9055923Z [0m[1;31m#     ANDROID_NDK_ROOT = '/usr/local/lib/android/sdk/ndk/27.3.13750724'[0m
+2026-09-14T14:17:51.9056254Z [0m[1;31m#     GITHUB_RETENTION_DAYS = '90'[0m
+2026-09-14T14:17:51.9056545Z [0m[1;31m#     JOURNAL_STREAM = '8:13422'[0m
+2026-09-14T14:17:51.9056844Z [0m[1;31m#     RUNNER_WORKSPACE = '/home/runner/work/Chemi-App'[0m
+2026-09-14T14:17:51.9057245Z [0m[1;31m#     LEIN_HOME = '/usr/local/lib/lein'[0m
+2026-09-14T14:17:51.9057647Z [0m[1;31m#     LEIN_JAR = '/usr/local/lib/lein/self-installs/leiningen-2.12.0-standalone.jar'[0m
+2026-09-14T14:17:51.9058022Z [0m[1;31m#     GITHUB_ACTION_REPOSITORY = ''[0m
+2026-09-14T14:17:51.9058326Z [0m[1;31m#     HCA_CLOUD_PROVIDER = 'azure'[0m
+2026-09-14T14:17:51.9066233Z [0m[1;31m#     PATH = '/home/runner/.buildozer/android/platform/apache-ant-1.9.4/bin:/home/runner/.local/bin:/opt/hostedtoolcache/Python/3.10.21/x64/bin:/opt/hostedtoolcache/Python/3.10.21/x64:/snap/bin:/home/runner/.local/bin:/opt/pipx_bin:/home/runner/.cargo/bin:/home/runner/.config/composer/vendor/bin:/usr/local/.ghcup/bin:/home/runner/.dotnet/tools:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin'[0m
+2026-09-14T14:17:51.9068619Z [0m[1;31m#     GITHUB_BASE_REF = ''[0m
+2026-09-14T14:17:51.9069092Z [0m[1;31m#     GHCUP_INSTALL_BASE_PREFIX = '/usr/local'[0m
+2026-09-14T14:17:51.9069521Z [0m[1;31m#     CI = 'true'[0m
+2026-09-14T14:17:51.9070018Z [0m[1;31m#     SWIFT_PATH = '/usr/share/swift/usr/bin'[0m
+2026-09-14T14:17:51.9070442Z [0m[1;31m#     ImageOS = 'ubuntu22'[0m
+2026-09-14T14:17:51.9070886Z [0m[1;31m#     GITHUB_REPOSITORY_OWNER = 'RicardoVD90'[0m
+2026-09-14T14:17:51.9071298Z [0m[1;31m#     GITHUB_HEAD_REF = ''[0m
+2026-09-14T14:17:51.9071687Z [0m[1;31m#     GITHUB_ACTION_REF = ''[0m
+2026-09-14T14:17:51.9072100Z [0m[1;31m#     ENABLE_RUNNER_TRACING = 'true'[0m
+2026-09-14T14:17:51.9072558Z [0m[1;31m#     GITHUB_WORKFLOW = 'Build Android APK'[0m
+2026-09-14T14:17:51.9073030Z [0m[1;31m#     DEBIAN_FRONTEND = 'noninteractive'[0m
+2026-09-14T14:17:51.9073856Z [0m[1;31m#     GITHUB_OUTPUT = '/home/runner/work/_temp/_runner_file_commands/set_output_2dd16224-aa8b-4503-9035-d5f14c7f1998'[0m
+2026-09-14T14:17:51.9074685Z [0m[1;31m#     AGENT_TOOLSDIRECTORY = '/opt/hostedtoolcache'[0m
+2026-09-14T14:17:51.9075063Z [0m[1;31m#     _ = '/home/runner/.local/bin/buildozer'[0m
+2026-09-14T14:17:51.9075421Z [0m[1;31m#     PACKAGES_PATH = '/home/runner/.buildozer/android/packages'[0m
+2026-09-14T14:17:51.9075863Z [0m[1;31m#     ANDROIDSDK = '/home/runner/.buildozer/android/platform/android-sdk'[0m
+2026-09-14T14:17:51.9076439Z [0m[1;31m#     ANDROIDNDK = '/home/runner/.buildozer/android/platform/android-ndk-r25b'[0m
+2026-09-14T14:17:51.9076796Z [0m[1;31m#     ANDROIDAPI = '33'[0m
+2026-09-14T14:17:51.9077045Z [0m[1;31m#     ANDROIDMINAPI = '21'[0m
+2026-09-14T14:17:51.9077475Z [0m[1;31m# [0m
+2026-09-14T14:17:51.9077718Z [0m[1;31m# Buildozer failed to execute the last command[0m
+2026-09-14T14:17:51.9078062Z [0m[1;31m# The error might be hidden in the log above this error[0m
+2026-09-14T14:17:51.9078414Z [0m[1;31m# Please read the full log, and search for it before[0m
+2026-09-14T14:17:51.9078742Z [0m[1;31m# raising an issue with buildozer itself.[0m
+2026-09-14T14:17:51.9079101Z [0m[1;31m# In case of a bug report, please add a full log with log_level = 2[0m
+2026-09-14T14:17:51.9184378Z ##[error]Process completed with exit code 1.
+2026-09-14T14:17:51.9282704Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+2026-09-14T14:17:51.9283620Z Post job cleanup.
+2026-09-14T14:17:52.0004803Z [command]/usr/bin/git version
+2026-09-14T14:17:52.0041993Z git version 2.55.0
+2026-09-14T14:17:52.0074573Z Temporarily overriding HOME='/home/runner/work/_temp/ca8ad320-33dc-453c-8093-d56790fd59cf' before making global git config changes
+2026-09-14T14:17:52.0075654Z Adding repository directory to the temporary git global config as a safe directory
+2026-09-14T14:17:52.0079169Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Chemi-App/Chemi-App
+2026-09-14T14:17:52.0120187Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-09-14T14:17:52.0152997Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-09-14T14:17:52.0400168Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-09-14T14:17:52.0424795Z http.https://github.com/.extraheader
+2026-09-14T14:17:52.0434492Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-09-14T14:17:52.0468998Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-09-14T14:17:52.0727702Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-09-14T14:17:52.0767536Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-09-14T14:17:52.1156104Z Cleaning up orphan processes
+2026-09-14T14:17:52.1442918Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-python@v5. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
