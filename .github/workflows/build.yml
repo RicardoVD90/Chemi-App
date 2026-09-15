@@ -40,33 +40,25 @@ jobs:
 
       - name: Install Buildozer and Cython
         run: |
-          pip install --upgrade pip
-          pip install --user Cython==0.29.36 buildozer
+          python -m pip install --upgrade pip virtualenv setuptools
+          pip install --user Cython==0.29.36 buildozer sh
 
       - name: Prepare and Patch python-for-android
         run: |
-          # Zorg dat de map leeg/schoon is en kloon python-for-android handmatig
           rm -rf ~/.buildozer/android/platform/python-for-android
           mkdir -p ~/.buildozer/android/platform
           git clone https://github.com/kivy/python-for-android.git ~/.buildozer/android/platform/python-for-android
           
-          # Patch build.py door alle regels met 'pip install -U pip' uit te commentariëren
           python3 -c "
-          build_py_path = '/home/runner/.buildozer/android/platform/python-for-android/pythonforandroid/build.py'
-          with open(build_py_path, 'r') as f:
-              lines = f.readlines()
-          
-          new_lines = []
-          for line in lines:
-              if 'pip install -U pip' in line:
-                  new_lines.append('# ' + line)
-                  print(f'Patched line: {line.strip()}')
-              else:
-                  new_lines.append(line)
-          
-          with open(build_py_path, 'w') as f:
-              f.writelines(new_lines)
-          print('Successfully patched build.py to completely disable pip upgrades.')
+          import os
+          build_py_path = os.path.expanduser('~/.buildozer/android/platform/python-for-android/pythonforandroid/build.py')
+          if os.path.exists(build_py_path):
+              with open(build_py_path, 'r') as f:
+                  lines = f.readlines()
+              new_lines = [('# ' + line if 'pip install -U pip' in line else line) for line in lines]
+              with open(build_py_path, 'w') as f:
+                  f.writelines(new_lines)
+              print('Succesvol build.py gepatcht.')
           "
 
       - name: Build with Buildozer
