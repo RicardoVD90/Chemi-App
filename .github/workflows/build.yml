@@ -40,26 +40,8 @@ jobs:
 
       - name: Install Buildozer and Cython
         run: |
-          python -m pip install --upgrade pip virtualenv setuptools
-          pip install --user Cython==0.29.36 buildozer sh
-
-      - name: Prepare and Patch python-for-android
-        run: |
-          rm -rf ~/.buildozer/android/platform/python-for-android
-          mkdir -p ~/.buildozer/android/platform
-          git clone https://github.com/kivy/python-for-android.git ~/.buildozer/android/platform/python-for-android
-          
-          python3 -c "
-          import os
-          build_py_path = os.path.expanduser('~/.buildozer/android/platform/python-for-android/pythonforandroid/build.py')
-          if os.path.exists(build_py_path):
-              with open(build_py_path, 'r') as f:
-                  lines = f.readlines()
-              new_lines = [('# ' + line if 'pip install -U pip' in line else line) for line in lines]
-              with open(build_py_path, 'w') as f:
-                  f.writelines(new_lines)
-              print('Succesvol build.py gepatcht.')
-          "
+          python -m pip install --upgrade pip setuptools wheel virtualenv
+          pip install --upgrade buildozer cython sh
 
       - name: Build with Buildozer
         run: |
