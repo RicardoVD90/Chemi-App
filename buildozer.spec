@@ -9,7 +9,7 @@ source.include_exts = py,png,jpg,jpeg,kv,atlas,wav,mp3,pdf,json,txt
 
 version = 0.1
 
-requirements = python3==3.10.11,hostpython3==3.10.11,kivy,pypdf,requests,pyjnius
+requirements = python3==3.10.11,hostpython3==3.10.11,kivy,pypdf,requests,pyjnius,pygame,speechrecognition
 
 orientation = landscape
 fullscreen = 1
