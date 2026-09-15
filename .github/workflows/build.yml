@@ -6,9 +6,16 @@ on:
       - main
       - master
 
+  workflow_dispatch:
+
 jobs:
   build:
     runs-on: ubuntu-22.04
+
+    env:
+      PIP_DISABLE_PIP_VERSION_CHECK: "1"
+      PIP_NO_CACHE_DIR: "1"
+      BUILDOZER_WARN_ON_ROOT: "0"
 
     steps:
       - name: Checkout Code
@@ -22,55 +29,128 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version: "3.10.11"
+          cache: "pip"
 
-      - name: Install dependencies
+      - name: Install system dependencies
         run: |
           sudo apt-get update
+
           sudo apt-get install -y \
             build-essential \
             git \
-            python3-dev \
+            zip \
+            unzip \
+            openjdk-17-jdk \
             autoconf \
+            automake \
             libtool \
             pkg-config \
             zlib1g-dev \
             libncurses5-dev \
             libncursesw5-dev \
+            libtinfo6 \
+            libffi-dev \
+            libssl-dev \
             libltdl-dev \
-            openjdk-17-jdk
+            cmake \
+            patch
 
-      - name: Install Buildozer
+      - name: Select Java 17
         run: |
-          python -m pip install --upgrade pip setuptools wheel
+          echo "JAVA_HOME=$JAVA_HOME_17_X64" >> "$GITHUB_ENV"
+          echo "$JAVA_HOME_17_X64/bin" >> "$GITHUB_PATH"
 
-          pip install \
-            buildozer==1.5.0 \
-            cython==0.29.36 \
-            python-for-android==2024.1.21 \
-            sh
-
-      - name: Clean caches
+      - name: Clean previous installations
         run: |
           rm -rf .buildozer
-          rm -rf ~/.buildozer
-          rm -rf ~/.cache/pip
+          rm -rf "$HOME/.buildozer"
+          rm -rf "$HOME/.cache/pip"
+          rm -rf "$HOME/.local/lib/python3.10/site-packages/buildozer"*
+          rm -rf "$HOME/.local/lib/python3.10/site-packages/pythonforandroid"*
+          rm -rf "$HOME/.local/lib/python3.10/site-packages/pip"*
 
-      - name: Show versions
+      - name: Install build tools
+        run: |
+          python -m ensurepip --upgrade
+          python -m pip install --force-reinstall "pip==24.3.1"
+          python -m pip install --upgrade setuptools wheel
+
+          python -m pip install \
+            "buildozer==1.5.0" \
+            "Cython==0.29.36" \
+            "virtualenv==20.26.6" \
+            "sh==2.0.7"
+
+      - name: Clone fixed python-for-android
+        run: |
+          git clone \
+            --depth 1 \
+            --branch v2024.01.21 \
+            https://github.com/kivy/python-for-android.git \
+            "$GITHUB_WORKSPACE/python-for-android"
+
+      - name: Patch internal pip environment
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path("python-for-android/pythonforandroid/build.py")
+          text = path.read_text(encoding="utf-8")
+
+          old = """source venv/bin/activate && pip install -U pip"""
+          new = """source venv/bin/activate && python -m ensurepip --upgrade && python -m pip install --force-reinstall pip==24.3.1"""
+
+          if old not in text:
+              raise SystemExit(
+                  "De verwachte pip-opdracht is niet gevonden in "
+                  "python-for-android/pythonforandroid/build.py"
+              )
+
+          path.write_text(
+              text.replace(old, new),
+              encoding="utf-8"
+          )
+
+          print("Interne pip-opdracht van python-for-android is aangepast.")
+          PY
+
+      - name: Configure local python-for-android
+        run: |
+          cat >> buildozer.spec <<EOF
+
+          p4a.source_dir = $GITHUB_WORKSPACE/python-for-android
+          EOF
+
+      - name: Show installed versions
         run: |
           python --version
-          pip --version
+          python -m pip --version
           buildozer --version
+          java -version
 
-      - name: Build APK
-        env:
-          PIP_NO_CACHE_DIR: "1"
+          git -C "$GITHUB_WORKSPACE/python-for-android" describe \
+            --tags \
+            --always
+
+          tail -n 15 buildozer.spec
+
+      - name: Build Android APK
         run: |
-          export PATH=$HOME/.local/bin:$PATH
+          buildozer android clean
           buildozer -v android debug
 
-      - name: Upload APK
+      - name: List generated files
+        if: always()
+        run: |
+          echo "Inhoud van de bin-map:"
+          find bin -maxdepth 2 -type f -print 2>/dev/null || true
+
+      - name: Upload APK Artifact
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: ChemieApp-APK
           path: bin/*.apk
+          if-no-files-found: error
+          retention-days: 30
