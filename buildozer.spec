@@ -5,7 +5,7 @@ package.name = chemieapp
 package.domain = org.chemie
 
 source.dir = .
-source.include_exts = py,png,jpg,kv,atlas,wav,mp3
+source.include_exts = py,png,jpg,jpeg,kv,atlas,wav,mp3,pdf,json,txt
 
 version = 0.1
 
@@ -22,4 +22,7 @@ android.api = 33
 android.minapi = 21
 android.ndk = 25b
 
+android.archs = arm64-v8a, armeabi-v7a
+
 log_level = 2
+warn_on_root = 1
