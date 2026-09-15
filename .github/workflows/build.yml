@@ -64,28 +64,26 @@ jobs:
           rm -rf .buildozer
           rm -rf "$HOME/.buildozer"
           rm -rf "$HOME/.cache/pip"
-          rm -rf "$HOME/.local/lib/python3.10/site-packages/buildozer"*
-          rm -rf "$HOME/.local/lib/python3.10/site-packages/pythonforandroid"*
-          rm -rf "$HOME/.local/lib/python3.10/site-packages/pip"*
 
       - name: Install build tools
         run: |
-          python -m ensurepip --upgrade
-          python -m pip install --force-reinstall "pip==24.3.1"
+          python -m pip install --upgrade "pip==24.3.1"
           python -m pip install --upgrade setuptools wheel
 
           python -m pip install \
             "buildozer==1.5.0" \
+            "python-for-android==2024.01.21" \
             "Cython==0.29.36" \
             "virtualenv==20.26.6" \
+            "appdirs" \
             "sh==2.0.7"
 
       - name: Show installed versions
         run: |
           python --version
-          pip --version
+          python -m pip --version
           buildozer --version
-          pip show python-for-android
+          python -m pip show python-for-android
 
       - name: Build Android APK
         run: |
@@ -95,8 +93,8 @@ jobs:
       - name: List generated files
         if: always()
         run: |
-          echo "Inhoud van de bin-map:"
-          find bin -maxdepth 2 -type f -print 2>/dev/null || true
+          echo "Inhoud van bin:"
+          find bin -type f || true
 
       - name: Upload APK Artifact
         if: success()
@@ -105,4 +103,3 @@ jobs:
           name: ChemieApp-APK
           path: bin/*.apk
           if-no-files-found: error
-          retention-days: 30
