@@ -15,7 +15,6 @@ jobs:
     env:
       PIP_DISABLE_PIP_VERSION_CHECK: "1"
       PIP_NO_CACHE_DIR: "1"
-      BUILDOZER_WARN_ON_ROOT: "0"
 
     steps:
       - name: Checkout Code
