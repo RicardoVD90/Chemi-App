@@ -40,8 +40,12 @@ jobs:
 
       - name: Install Buildozer and Cython
         run: |
-          python -m pip install --upgrade pip setuptools wheel virtualenv
+          python -m pip install "pip<24.1" "setuptools<70" wheel virtualenv
           pip install --upgrade buildozer cython sh
+
+      - name: Clean broken build cache
+        run: |
+          rm -rf .buildozer/android/platform/build-*
 
       - name: Build with Buildozer
         run: |
