@@ -80,58 +80,12 @@ jobs:
             "virtualenv==20.26.6" \
             "sh==2.0.7"
 
-      - name: Clone fixed python-for-android
-        run: |
-          git clone \
-            --depth 1 \
-            --branch v2024.01.21 \
-            https://github.com/kivy/python-for-android.git \
-            "$GITHUB_WORKSPACE/python-for-android"
-
-      - name: Patch internal pip environment
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-
-          path = Path("python-for-android/pythonforandroid/build.py")
-          text = path.read_text(encoding="utf-8")
-
-          old = """source venv/bin/activate && pip install -U pip"""
-          new = """source venv/bin/activate && python -m ensurepip --upgrade && python -m pip install --force-reinstall pip==24.3.1"""
-
-          if old not in text:
-              raise SystemExit(
-                  "De verwachte pip-opdracht is niet gevonden in "
-                  "python-for-android/pythonforandroid/build.py"
-              )
-
-          path.write_text(
-              text.replace(old, new),
-              encoding="utf-8"
-          )
-
-          print("Interne pip-opdracht van python-for-android is aangepast.")
-          PY
-
-      - name: Configure local python-for-android
-        run: |
-          cat >> buildozer.spec <<EOF
-
-          p4a.source_dir = $GITHUB_WORKSPACE/python-for-android
-          EOF
-
       - name: Show installed versions
         run: |
           python --version
-          python -m pip --version
+          pip --version
           buildozer --version
-          java -version
-
-          git -C "$GITHUB_WORKSPACE/python-for-android" describe \
-            --tags \
-            --always
-
-          tail -n 15 buildozer.spec
+          pip show python-for-android
 
       - name: Build Android APK
         run: |
