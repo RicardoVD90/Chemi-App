@@ -9,7 +9,7 @@ source.include_exts = py,png,jpg,kv,atlas,wav,mp3
 
 version = 0.1
 
-requirements = python3==3.10.11,kivy,pypdf,requests,pyjnius
+requirements = python3==3.10.11,hostpython3==3.10.11,kivy,pypdf,requests,pyjnius
 
 orientation = landscape
 fullscreen = 1
