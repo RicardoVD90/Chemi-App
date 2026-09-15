@@ -50,16 +50,23 @@ jobs:
           mkdir -p ~/.buildozer/android/platform
           git clone https://github.com/kivy/python-for-android.git ~/.buildozer/android/platform/python-for-android
           
-          # Patch build.py zodat de problematische 'pip install -U pip' wordt overgeslagen
+          # Patch build.py door alle regels met 'pip install -U pip' uit te commentariëren
           python3 -c "
           build_py_path = '/home/runner/.buildozer/android/platform/python-for-android/pythonforandroid/build.py'
           with open(build_py_path, 'r') as f:
-              content = f.read()
-          # Vervang de pip upgrade aanroep door een lege instructie (pass)
-          new_content = content.replace(\"shprint(pip, 'install', '-U', 'pip')\", \"# shprint(pip, 'install', '-U', 'pip')\")
+              lines = f.readlines()
+          
+          new_lines = []
+          for line in lines:
+              if 'pip install -U pip' in line:
+                  new_lines.append('# ' + line)
+                  print(f'Patched line: {line.strip()}')
+              else:
+                  new_lines.append(line)
+          
           with open(build_py_path, 'w') as f:
-              f.write(new_content)
-          print('Successfully patched build.py to prevent pip upgrade crash.')
+              f.writelines(new_lines)
+          print('Successfully patched build.py to completely disable pip upgrades.')
           "
 
       - name: Build with Buildozer
