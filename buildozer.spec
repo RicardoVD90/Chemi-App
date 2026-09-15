@@ -28,4 +28,5 @@ android.ndk = 25b
 # Log niveau (0 = info, 1 = debug, 2 = debug met alle details)
 log_level = 2
 
-# p4a.branch = master
+p4a.fork = kivy
+p4a.branch = master
