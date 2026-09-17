@@ -125,7 +125,7 @@ class ChemieApp(App):
         self.maak_schrijfbare_mappen()
 
         self.alarm_sound = self.laad_geluid("alarm.wav")
-        self.ping_sound = self.laad_geluid("Ping.wav")
+        self.ping_sound = self.laad_geluid("ping.wav")
         self.intro_audio = self.laad_geluid("intro_audio.mp3")
 
         self.root_layout = FloatLayout()
