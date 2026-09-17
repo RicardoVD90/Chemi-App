@@ -169,67 +169,33 @@ class AndroidContinuousListener:
             )
 
             self.intent = self.Intent(
-                self.RecognizerIntent
-                .ACTION_RECOGNIZE_SPEECH
+                self.RecognizerIntent.ACTION_RECOGNIZE_SPEECH
             )
-
+            
             self.intent.putExtra(
                 self.RecognizerIntent.EXTRA_LANGUAGE_MODEL,
-                self.RecognizerIntent
-                .LANGUAGE_MODEL_FREE_FORM
+                self.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
             )
-
+            
             self.intent.putExtra(
                 self.RecognizerIntent.EXTRA_LANGUAGE,
-                self.language
+                "nl-NL"
             )
-
-            self.intent.putExtra(
-                self.RecognizerIntent
-                .EXTRA_LANGUAGE_PREFERENCE,
-                self.language
+            
+            print(
+                "[ANDROID LISTENER]: STARTLISTENING VERSTUREN"
             )
-
-            self.intent.putExtra(
-                self.RecognizerIntent.EXTRA_PARTIAL_RESULTS,
-                True
-            )
-
-            self.intent.putExtra(
-                self.RecognizerIntent.EXTRA_MAX_RESULTS,
-                5
-            )
-
-            self.intent.putExtra(
-                self.RecognizerIntent.EXTRA_CALLING_PACKAGE,
-                activiteit.getPackageName()
-            )
-
-            self.intent.putExtra(
-                "android.speech.extra."
-                "SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS",
-                1500
-            )
-
-            self.intent.putExtra(
-                "android.speech.extra."
-                "SPEECH_INPUT_POSSIBLY_COMPLETE_"
-                "SILENCE_LENGTH_MILLIS",
-                1000
-            )
-
-            self.intent.putExtra(
-                "android.speech.extra."
-                "SPEECH_INPUT_MINIMUM_LENGTH_MILLIS",
-                1000
-            )
-
+            
             self.recognizer.startListening(
                 self.intent
             )
-
+            
+            print(
+                "[ANDROID LISTENER]: STARTLISTENING VERSTUURD"
+            )
+            
             self.luistert = True
-
+            
             self._status(
                 "MICROFOON START..."
             )
