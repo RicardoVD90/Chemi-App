@@ -2,16 +2,24 @@ from kivy.clock import Clock
 from kivy.utils import platform
 
 
+if platform == "android":
+    try:
+        from android.runnable import run_on_ui_thread
+    except ImportError:
+        def run_on_ui_thread(function):
+            return function
+else:
+    def run_on_ui_thread(function):
+        return function
+
+
 class AndroidContinuousListener:
     """
     Continu herstartende Android SpeechRecognizer.
 
-    Deze klasse:
-    - gebruikt de Android-native SpeechRecognizer;
-    - levert gedeeltelijke en definitieve resultaten;
-    - herstart automatisch na een resultaat;
-    - herstart automatisch na herkenningsfouten;
-    - stopt netjes wanneer de app wordt afgesloten.
+    Belangrijk:
+    Alle opdrachten aan SpeechRecognizer worden uitgevoerd
+    op de Android UI-thread via @run_on_ui_thread.
     """
 
     def __init__(
@@ -33,9 +41,7 @@ class AndroidContinuousListener:
         self.actief = False
         self.luistert = False
         self.herstart_event = None
-
-        self.laatste_tekst = ""
-        self.laatste_tekst_tijd = 0
+        self.android_klassen_geladen = False
 
         if platform != "android":
             return
@@ -70,17 +76,18 @@ class AndroidContinuousListener:
                 "android.content.Intent"
             )
 
-            self.Bundle = autoclass(
-                "android.os.Bundle"
-            )
+            self.android_klassen_geladen = True
 
-            self.ArrayList = autoclass(
-                "java.util.ArrayList"
+            print(
+                "[ANDROID LISTENER]: "
+                "Android spraakklassen geladen"
             )
 
         except Exception as fout:
+            self.android_klassen_geladen = False
+
             self._fout(
-                f"Android spraakklassen konden niet "
+                "Android spraakklassen konden niet "
                 f"worden geladen: {fout}"
             )
 
@@ -91,141 +98,75 @@ class AndroidContinuousListener:
             )
             return
 
+        if not self.android_klassen_geladen:
+            self._fout(
+                "ANDROID SPRAAKKLASSEN ZIJN NIET GELADEN"
+            )
+            return
+
         if self.actief:
             return
 
         self.actief = True
+        self._status("MICROFOON INITIALISEREN...")
 
-        # SpeechRecognizer moet vanaf de hoofdthread worden bediend.
-        Clock.schedule_once(
-            self._maak_en_start,
-            0
-        )
+        self._maak_en_start()
 
-    def _maak_en_start(self, dt=None):
+    @run_on_ui_thread
+    def _maak_en_start(self, *args):
+        """
+        Deze functie draait verplicht op de Android UI-thread.
+        """
+
         if not self.actief:
             return
 
         try:
             activiteit = self.PythonActivity.mActivity
 
-            if not self.SpeechRecognizer.isRecognitionAvailable(
-                activiteit
-            ):
-                self._status(
-                    "SPRAAKHERKENNING NIET BESCHIKBAAR"
+            if activiteit is None:
+                self._fout(
+                    "ANDROID ACTIVITY NIET BESCHIKBAAR"
+                )
+                self._plan_herstart(2.0)
+                return
+
+            beschikbaar = (
+                self.SpeechRecognizer
+                .isRecognitionAvailable(activiteit)
+            )
+
+            if not beschikbaar:
+                self._fout(
+                    "SPRAAKHERKENNING NIET BESCHIKBAAR "
+                    "OP DIT APPARAAT"
                 )
                 return
 
             if self.recognizer is None:
+                self._status(
+                    "SPRAAKHERKENNER AANMAKEN..."
+                )
+
                 self.recognizer = (
                     self.SpeechRecognizer
                     .createSpeechRecognizer(activiteit)
                 )
 
             if self.listener is None:
-                eigenaar = self
+                self._maak_listener()
 
-                class RecognitionListener(
-                    self.PythonJavaClass
-                ):
-                    __javainterfaces__ = [
-                        "android/speech/RecognitionListener"
-                    ]
-
-                    __javacontext__ = "app"
-
-                    @self.java_method(
-                        "(Landroid/os/Bundle;)V"
-                    )
-                    def onReadyForSpeech(
-                        listener_self,
-                        params
-                    ):
-                        eigenaar.luistert = True
-                        eigenaar._status(
-                            "MICROFOON ACTIEF - ZEG CHEMI"
-                        )
-
-                    @self.java_method("()V")
-                    def onBeginningOfSpeech(listener_self):
-                        eigenaar._status(
-                            "SPRAAK GEHOORD"
-                        )
-
-                    @self.java_method("(F)V")
-                    def onRmsChanged(
-                        listener_self,
-                        rms_db
-                    ):
-                        # Kan later gebruikt worden voor
-                        # een visuele microfoonmeter.
-                        pass
-
-                    @self.java_method("([B)V")
-                    def onBufferReceived(
-                        listener_self,
-                        buffer
-                    ):
-                        pass
-
-                    @self.java_method("()V")
-                    def onEndOfSpeech(listener_self):
-                        eigenaar.luistert = False
-                        eigenaar._status(
-                            "SPRAAK VERWERKEN..."
-                        )
-
-                    @self.java_method(
-                        "(Landroid/os/Bundle;)V"
-                    )
-                    def onResults(
-                        listener_self,
-                        results
-                    ):
-                        eigenaar.luistert = False
-                        eigenaar._verwerk_bundle(
-                            results,
-                            definitief=True
-                        )
-
-                    @self.java_method(
-                        "(Landroid/os/Bundle;)V"
-                    )
-                    def onPartialResults(
-                        listener_self,
-                        partial_results
-                    ):
-                        eigenaar._verwerk_bundle(
-                            partial_results,
-                            definitief=False
-                        )
-
-                    @self.java_method("(I)V")
-                    def onError(
-                        listener_self,
-                        error_code
-                    ):
-                        eigenaar.luistert = False
-                        eigenaar._verwerk_fout(
-                            error_code
-                        )
-
-                    @self.java_method(
-                        "(ILandroid/os/Bundle;)V"
-                    )
-                    def onEvent(
-                        listener_self,
-                        event_type,
-                        params
-                    ):
-                        pass
-
-                self.listener = RecognitionListener()
-
-                self.recognizer.setRecognitionListener(
-                    self.listener
+            if self.listener is None:
+                self._fout(
+                    "RECOGNITION LISTENER KON NIET "
+                    "WORDEN AANGEMAAKT"
                 )
+                self._plan_herstart(2.0)
+                return
+
+            self.recognizer.setRecognitionListener(
+                self.listener
+            )
 
             self.intent = self.Intent(
                 self.RecognizerIntent
@@ -244,7 +185,8 @@ class AndroidContinuousListener:
             )
 
             self.intent.putExtra(
-                self.RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE,
+                self.RecognizerIntent
+                .EXTRA_LANGUAGE_PREFERENCE,
                 self.language
             )
 
@@ -259,25 +201,26 @@ class AndroidContinuousListener:
             )
 
             self.intent.putExtra(
-                self.RecognizerIntent
-                .EXTRA_CALLING_PACKAGE,
+                self.RecognizerIntent.EXTRA_CALLING_PACKAGE,
                 activiteit.getPackageName()
             )
 
-            # Geeft de gebruiker iets meer tijd
-            # voordat stilte een sessie beëindigt.
             self.intent.putExtra(
-                "android.speech.extra.SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS",
+                "android.speech.extra."
+                "SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS",
                 1500
             )
 
             self.intent.putExtra(
-                "android.speech.extra.SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS",
+                "android.speech.extra."
+                "SPEECH_INPUT_POSSIBLY_COMPLETE_"
+                "SILENCE_LENGTH_MILLIS",
                 1000
             )
 
             self.intent.putExtra(
-                "android.speech.extra.SPEECH_INPUT_MINIMUM_LENGTH_MILLIS",
+                "android.speech.extra."
+                "SPEECH_INPUT_MINIMUM_LENGTH_MILLIS",
                 1000
             )
 
@@ -300,6 +243,130 @@ class AndroidContinuousListener:
 
             self._plan_herstart(2.0)
 
+    def _maak_listener(self):
+        """
+        Maakt de Java RecognitionListener-interface aan.
+        """
+
+        try:
+            eigenaar = self
+            PythonJavaClass = self.PythonJavaClass
+            java_method = self.java_method
+
+            class RecognitionListener(PythonJavaClass):
+                __javainterfaces__ = [
+                    "android/speech/RecognitionListener"
+                ]
+
+                __javacontext__ = "app"
+
+                @java_method(
+                    "(Landroid/os/Bundle;)V"
+                )
+                def onReadyForSpeech(
+                    listener_self,
+                    params
+                ):
+                    eigenaar.luistert = True
+
+                    eigenaar._status(
+                        "MICROFOON ACTIEF - ZEG CHEMI"
+                    )
+
+                @java_method("()V")
+                def onBeginningOfSpeech(
+                    listener_self
+                ):
+                    eigenaar._status(
+                        "SPRAAK GEHOORD"
+                    )
+
+                @java_method("(F)V")
+                def onRmsChanged(
+                    listener_self,
+                    rms_db
+                ):
+                    pass
+
+                @java_method("([B)V")
+                def onBufferReceived(
+                    listener_self,
+                    buffer
+                ):
+                    pass
+
+                @java_method("()V")
+                def onEndOfSpeech(
+                    listener_self
+                ):
+                    eigenaar.luistert = False
+
+                    eigenaar._status(
+                        "SPRAAK VERWERKEN..."
+                    )
+
+                @java_method(
+                    "(Landroid/os/Bundle;)V"
+                )
+                def onResults(
+                    listener_self,
+                    results
+                ):
+                    eigenaar.luistert = False
+
+                    eigenaar._verwerk_bundle(
+                        results,
+                        definitief=True
+                    )
+
+                @java_method(
+                    "(Landroid/os/Bundle;)V"
+                )
+                def onPartialResults(
+                    listener_self,
+                    partial_results
+                ):
+                    eigenaar._verwerk_bundle(
+                        partial_results,
+                        definitief=False
+                    )
+
+                @java_method("(I)V")
+                def onError(
+                    listener_self,
+                    error_code
+                ):
+                    eigenaar.luistert = False
+
+                    eigenaar._verwerk_fout(
+                        error_code
+                    )
+
+                @java_method(
+                    "(ILandroid/os/Bundle;)V"
+                )
+                def onEvent(
+                    listener_self,
+                    event_type,
+                    params
+                ):
+                    pass
+
+            self.listener = RecognitionListener()
+
+            print(
+                "[ANDROID LISTENER]: "
+                "RecognitionListener aangemaakt"
+            )
+
+        except Exception as fout:
+            self.listener = None
+
+            self._fout(
+                "RecognitionListener kon niet worden "
+                f"aangemaakt: {fout}"
+            )
+
     def _verwerk_bundle(
         self,
         bundle,
@@ -307,7 +374,8 @@ class AndroidContinuousListener:
     ):
         try:
             resultaten = bundle.getStringArrayList(
-                self.SpeechRecognizer.RESULTS_RECOGNITION
+                self.SpeechRecognizer
+                .RESULTS_RECOGNITION
             )
 
             if resultaten is None:
@@ -329,14 +397,16 @@ class AndroidContinuousListener:
                     self._plan_herstart(0.5)
                 return
 
-            print(
-                f"[ANDROID SPRAAK "
-                f"{'DEFINITIEF' if definitief else 'DEELS'}]: "
-                f"{tekst}"
+            soort = (
+                "DEFINITIEF"
+                if definitief
+                else "DEELS"
             )
 
-            # Alleen definitieve resultaten doorgeven.
-            # Zo wordt dezelfde noodzin niet meerdere keren gestart.
+            print(
+                f"[ANDROID SPRAAK {soort}]: {tekst}"
+            )
+
             if definitief:
                 Clock.schedule_once(
                     lambda dt, resultaat=tekst:
@@ -348,13 +418,18 @@ class AndroidContinuousListener:
 
         except Exception as fout:
             self._fout(
-                f"Spraakresultaat kon niet worden "
+                "Spraakresultaat kon niet worden "
                 f"verwerkt: {fout}"
             )
 
             self._plan_herstart(1.0)
 
     def _verwerk_fout(self, error_code):
+        try:
+            code = int(error_code)
+        except Exception:
+            code = -1
+
         foutnamen = {
             1: "NETWERK TIME-OUT",
             2: "NETWERKFOUT",
@@ -372,29 +447,39 @@ class AndroidContinuousListener:
         }
 
         foutnaam = foutnamen.get(
-            int(error_code),
-            f"ONBEKENDE FOUT {error_code}"
+            code,
+            f"ONBEKENDE FOUT {code}"
         )
 
-        # Geen spraak of geen match is normaal tijdens
-        # voortdurend luisteren en hoeft niet als ernstige
-        # fout op het scherm te verschijnen.
-        if int(error_code) in (6, 7):
+        print(
+            f"[ANDROID LISTENER FOUTCODE]: "
+            f"{code} - {foutnaam}"
+        )
+
+        if code in (6, 7):
             self._status(
                 "MICROFOON HERSTART..."
             )
-            wachttijd = 0.4
+            wachttijd = 0.5
 
-        elif int(error_code) == 8:
+        elif code == 8:
             self._status(
                 "SPRAAKHERKENNER BEZET"
             )
             wachttijd = 1.5
 
-        elif int(error_code) == 9:
+        elif code == 9:
             self._fout(
                 "MICROFOONTOESTEMMING ONTBREEKT"
             )
+            wachttijd = 5.0
+
+        elif code in (1, 2, 4, 11):
+            self._fout(foutnaam)
+            wachttijd = 3.0
+
+        elif code == 10:
+            self._fout(foutnaam)
             wachttijd = 5.0
 
         else:
@@ -418,7 +503,13 @@ class AndroidContinuousListener:
             wachttijd
         )
 
-    def _herstart(self, dt=None):
+    @run_on_ui_thread
+    def _herstart(self, *args):
+        """
+        Annuleren en opnieuw starten gebeurt ook
+        verplicht op de Android UI-thread.
+        """
+
         self.herstart_event = None
 
         if not self.actief:
@@ -427,12 +518,16 @@ class AndroidContinuousListener:
         try:
             if self.recognizer is not None:
                 self.recognizer.cancel()
-        except Exception:
-            pass
+
+        except Exception as fout:
+            print(
+                "[ANDROID LISTENER]: "
+                f"Annuleren gaf melding: {fout}"
+            )
 
         Clock.schedule_once(
-            self._maak_en_start,
-            0.2
+            lambda dt: self._maak_en_start(),
+            0.3
         )
 
     def pauzeer(self):
@@ -447,11 +542,18 @@ class AndroidContinuousListener:
 
             self.herstart_event = None
 
+        self._pauzeer_op_ui_thread()
+
+    @run_on_ui_thread
+    def _pauzeer_op_ui_thread(self):
         try:
             if self.recognizer is not None:
                 self.recognizer.cancel()
-        except Exception:
-            pass
+
+        except Exception as fout:
+            print(
+                f"Microfoon pauzeren gaf melding: {fout}"
+            )
 
         self._status(
             "MICROFOON GEPAUZEERD"
@@ -462,9 +564,10 @@ class AndroidContinuousListener:
             return
 
         self.actief = True
+        self._status("MICROFOON HERVATTEN...")
 
         Clock.schedule_once(
-            self._maak_en_start,
+            lambda dt: self._maak_en_start(),
             0.3
         )
 
@@ -480,13 +583,18 @@ class AndroidContinuousListener:
 
             self.herstart_event = None
 
+        self._stop_op_ui_thread()
+
+    @run_on_ui_thread
+    def _stop_op_ui_thread(self):
         try:
             if self.recognizer is not None:
                 self.recognizer.cancel()
                 self.recognizer.destroy()
+
         except Exception as fout:
             print(
-                f"SpeechRecognizer kon niet netjes "
+                "SpeechRecognizer kon niet netjes "
                 f"worden afgesloten: {fout}"
             )
 
@@ -499,7 +607,9 @@ class AndroidContinuousListener:
         )
 
     def _status(self, tekst):
-        print(f"[ANDROID LISTENER]: {tekst}")
+        print(
+            f"[ANDROID LISTENER]: {tekst}"
+        )
 
         if self.on_status is not None:
             Clock.schedule_once(
@@ -509,7 +619,9 @@ class AndroidContinuousListener:
             )
 
     def _fout(self, tekst):
-        print(f"[ANDROID LISTENER FOUT]: {tekst}")
+        print(
+            f"[ANDROID LISTENER FOUT]: {tekst}"
+        )
 
         if self.on_error is not None:
             Clock.schedule_once(
