@@ -3,7 +3,12 @@ import speech_recognition as sr
 import csv
 import time
 import re
-import edge_tts
+
+from kivy.utils import platform
+
+if platform != "android":
+    import edge_tts
+
 import asyncio
 import pygame
 import threading
@@ -35,7 +40,6 @@ from kivy.core.text import LabelBase
 from kivy.graphics import Color, Rectangle
 from kivy.animation import Animation
 from kivy.properties import NumericProperty
-from kivy.utils import platform
 
 if platform == 'android':
     from android.permissions import request_permissions, Permission
@@ -333,13 +337,17 @@ class ChemieApp(App):
     def assistent_spreekt(self, tekst):
         try:
             if platform == 'android':
-                # Op Android slaan we online edge-tts over om crashen te voorkomen
                 print(f"[Android TTS stand-in]: {tekst}")
                 return
-
-            # --- WINDOWS CODE (Blijft ongewijzigd) ---
+    
             bestandsnaam = f"spraak_{int(time.time())}.mp3"
-            asyncio.run(edge_tts.Communicate(tekst, "nl-NL-FennaNeural").save(bestandsnaam))
+    
+            asyncio.run(
+                edge_tts.Communicate(
+                    tekst,
+                    "nl-NL-FennaNeural"
+                ).save(bestandsnaam)
+            )
 
             pygame.mixer.music.load(bestandsnaam)
             pygame.mixer.music.play()
