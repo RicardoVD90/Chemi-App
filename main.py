@@ -289,186 +289,186 @@ class ChemieApp(App):
 
     def verwerk_android_spraak(self, gesproken_tekst):
     try:
-        tekst = str(gesproken_tekst).lower().strip()
-
-        print(
-            f"[ANDROID GEHOORD\]: {tekst}"
-        )
-
-        if not tekst:
-            return
-
-        # Tijdens een actieve noodprocedure alleen
-        # stopopdrachten verwerken.
-        if self.nood_actief:
-            stopopdrachten = [
-                "stop noodprocedure",
-                "stop alarm",
-                "alarm stoppen"
+            tekst = str(gesproken_tekst).lower().strip()
+    
+            print(
+                f"[ANDROID GEHOORD\]: {tekst}"
+            )
+    
+            if not tekst:
+                return
+    
+            # Tijdens een actieve noodprocedure alleen
+            # stopopdrachten verwerken.
+            if self.nood_actief:
+                stopopdrachten = [
+                    "stop noodprocedure",
+                    "stop alarm",
+                    "alarm stoppen"
+                ]
+    
+                if any(
+                    opdracht in tekst
+                    for opdracht in stopopdrachten
+                ):
+                    self.stop_noodprocedure()
+    
+                return
+    
+            # Gesproken locatiekeuze verwerken.
+            if self.wacht_op_locatie:
+                if (
+                    "laboratorium" in tekst
+                    or tekst == "lab"
+                    or "het lab" in tekst
+                ):
+                    self.wacht_op_locatie = False
+                    self.set_locatie("lab")
+                    return
+    
+                if (
+                    "fabriek" in tekst
+                    or "productie" in tekst
+                    or "de hal" in tekst
+                ):
+                    self.wacht_op_locatie = False
+                    self.set_locatie("fabriek")
+                    return
+    
+            # Directe noodmeldingen.
+            noodzinnen = [
+                "noodgeval",
+                "help",
+                "in mijn ogen",
+                "in de ogen",
+                "vloeistof in ogen",
+                "vloeistof in mijn ogen",
+                "chemische stof in ogen",
+                "chemische stof in mijn ogen",
+                "ogen spoelen",
+                "oog spoelen",
+                "spoel mijn ogen",
+                "brand in mijn ogen"
             ]
-
+    
             if any(
-                opdracht in tekst
-                for opdracht in stopopdrachten
+                noodzin in tekst
+                for noodzin in noodzinnen
             ):
-                self.stop_noodprocedure()
-
-            return
-
-        # Gesproken locatiekeuze verwerken.
-        if self.wacht_op_locatie:
-            if (
-                "laboratorium" in tekst
-                or tekst == "lab"
-                or "het lab" in tekst
-            ):
-                self.wacht_op_locatie = False
-                self.set_locatie("lab")
-                return
-
-            if (
-                "fabriek" in tekst
-                or "productie" in tekst
-                or "de hal" in tekst
-            ):
-                self.wacht_op_locatie = False
-                self.set_locatie("fabriek")
-                return
-
-        # Directe noodmeldingen.
-        noodzinnen = [
-            "noodgeval",
-            "help",
-            "in mijn ogen",
-            "in de ogen",
-            "vloeistof in ogen",
-            "vloeistof in mijn ogen",
-            "chemische stof in ogen",
-            "chemische stof in mijn ogen",
-            "ogen spoelen",
-            "oog spoelen",
-            "spoel mijn ogen",
-            "brand in mijn ogen"
-        ]
-
-        if any(
-            noodzin in tekst
-            for noodzin in noodzinnen
-        ):
-            huidige_tijd = time.time()
-
-            # Voorkom dat hetzelfde spraakresultaat
-            # meerdere noodprocedures start.
-            if (
-                huidige_tijd
-                - self.laatste_noodactie
-                < 5
-            ):
-                return
-
-            self.laatste_noodactie = huidige_tijd
-            self.wacht_op_opdracht = False
-
-            print(
-                "[ANDROID ACTIE\]: "
-                "DIRECTE NOODMELDING HERKEND"
-            )
-
-            self.verwerk_android_noodgeval(
-                tekst
-            )
-            return
-
-        # Als eerder alleen "Chemi" is gezegd,
-        # behandelen we deze tekst als vervolgopdracht.
-        if self.wacht_op_opdracht:
-            self.wacht_op_opdracht = False
-
-            print(
-                "[ANDROID ACTIE\]: "
-                f"VERVOLGOPDRACHT: {tekst}"
-            )
-
-            self.verwerk_android_opdracht(
-                tekst
-            )
-            return
-
-        # Normale wake-word detectie.
-        if (
-            "chemi" in tekst
-            or "chemie" in tekst
-        ):
-            opdracht = tekst
-
-            opdracht = opdracht.replace(
-                "chemie",
-                "",
-                1
-            )
-
-            opdracht = opdracht.replace(
-                "chemi",
-                "",
-                1
-            )
-
-            opdracht = opdracht.strip(
-                " ,.!?"
-            )
-
-            # Bijvoorbeeld:
-            # "Chemie open het MSDS van methanol"
-            if opdracht:
+                huidige_tijd = time.time()
+    
+                # Voorkom dat hetzelfde spraakresultaat
+                # meerdere noodprocedures start.
+                if (
+                    huidige_tijd
+                    - self.laatste_noodactie
+                    < 5
+                ):
+                    return
+    
+                self.laatste_noodactie = huidige_tijd
+                self.wacht_op_opdracht = False
+    
                 print(
                     "[ANDROID ACTIE\]: "
-                    f"DIRECTE OPDRACHT: {opdracht}"
+                    "DIRECTE NOODMELDING HERKEND"
                 )
-
-                self.verwerk_android_opdracht(
-                    opdracht
+    
+                self.verwerk_android_noodgeval(
+                    tekst
                 )
                 return
-
-            # Alleen het wake-word is gehoord.
-            self.wacht_op_opdracht = True
-
+    
+            # Als eerder alleen "Chemi" is gezegd,
+            # behandelen we deze tekst als vervolgopdracht.
+            if self.wacht_op_opdracht:
+                self.wacht_op_opdracht = False
+    
+                print(
+                    "[ANDROID ACTIE\]: "
+                    f"VERVOLGOPDRACHT: {tekst}"
+                )
+    
+                self.verwerk_android_opdracht(
+                    tekst
+                )
+                return
+    
+            # Normale wake-word detectie.
+            if (
+                "chemi" in tekst
+                or "chemie" in tekst
+            ):
+                opdracht = tekst
+    
+                opdracht = opdracht.replace(
+                    "chemie",
+                    "",
+                    1
+                )
+    
+                opdracht = opdracht.replace(
+                    "chemi",
+                    "",
+                    1
+                )
+    
+                opdracht = opdracht.strip(
+                    " ,.!?"
+                )
+    
+                # Bijvoorbeeld:
+                # "Chemie open het MSDS van methanol"
+                if opdracht:
+                    print(
+                        "[ANDROID ACTIE\]: "
+                        f"DIRECTE OPDRACHT: {opdracht}"
+                    )
+    
+                    self.verwerk_android_opdracht(
+                        opdracht
+                    )
+                    return
+    
+                # Alleen het wake-word is gehoord.
+                self.wacht_op_opdracht = True
+    
+                print(
+                    "[ANDROID ACTIE\]: "
+                    "WAKE-WORD CHEMI HERKEND"
+                )
+    
+                self.update_ui(
+                    "WAT KAN IK VOOR U DOEN?",
+                    KLEUR_VRAAG,
+                    KLEUR_TEKST_DONKER
+                )
+    
+                self.speel_geluid(
+                    self.ping_sound
+                )
+    
+                Clock.schedule_once(
+                    self.reset_wachten_op_opdracht,
+                    10
+                )
+    
+                return
+    
             print(
                 "[ANDROID ACTIE\]: "
-                "WAKE-WORD CHEMI HERKEND"
+                "TEKST BEVAT GEEN WAKE-WORD OF NOODMELDING"
             )
-
-            self.update_ui(
-                "WAT KAN IK VOOR U DOEN?",
-                KLEUR_VRAAG,
-                KLEUR_TEKST_DONKER
+    
+        except Exception as fout:
+            print(
+                "[ANDROID FOUT VERWERK_SPRAAK\]: "
+                f"{type(fout).__name__}: {fout}"
             )
-
-            self.speel_geluid(
-                self.ping_sound
+    
+            self.log_status(
+                "FOUT BIJ VERWERKEN VAN SPRAAK"
             )
-
-            Clock.schedule_once(
-                self.reset_wachten_op_opdracht,
-                10
-            )
-
-            return
-
-        print(
-            "[ANDROID ACTIE\]: "
-            "TEKST BEVAT GEEN WAKE-WORD OF NOODMELDING"
-        )
-
-    except Exception as fout:
-        print(
-            "[ANDROID FOUT VERWERK_SPRAAK\]: "
-            f"{type(fout).__name__}: {fout}"
-        )
-
-        self.log_status(
-            "FOUT BIJ VERWERKEN VAN SPRAAK"
-        )
         
     def reset_wachten_op_opdracht(self, dt=None):
         if self.wacht_op_opdracht:
