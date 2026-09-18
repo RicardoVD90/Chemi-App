@@ -102,7 +102,14 @@ class AndroidContinuousListener:
                 self.RecognizerIntent.EXTRA_LANGUAGE_MODEL,
                 self.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
             )
-            self.intent.putExtra(self.RecognizerIntent.EXTRA_LANGUAGE, self.language)
+            self.intent.putExtra(
+                self.RecognizerIntent.EXTRA_LANGUAGE,
+                str(self.language)
+            )
+            self.intent.putExtra(
+                "android.speech.extra.LANGUAGE",
+                "nl-NL"
+            )
 
             self.callback_ontvangen = False
             print("[ANDROID LISTENER]: STARTLISTENING VERSTUREN")
