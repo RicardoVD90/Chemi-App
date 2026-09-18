@@ -288,7 +288,7 @@ class ChemieApp(App):
             self.status_log.color = get_color_from_hex("#E74C3C")
 
     def verwerk_android_spraak(self, gesproken_tekst):
-    try:
+        try:
             tekst = str(gesproken_tekst).lower().strip()
     
             print(
