@@ -227,7 +227,7 @@ class ChemieApp(App):
     def on_start(self):
         if platform == "android":
             self.vraag_android_permissies()
-            Clock.schedule_once(self.start_android_listener, 3.0)
+            Clock.schedule_once(self.start_android_listener,10.0)
 
     def on_stop(self):
         if platform == "android" and self.android_listener is not None:
