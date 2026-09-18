@@ -288,7 +288,7 @@ class AndroidContinuousListener:
             self._fout(foutnaam)
             wachttijd = 2.0
 
-        self._plan_herstart(wachttijd)
+        print("[ANDROID TEST\]: HERSTART OVERGESLAGEN")
 
     def _plan_herstart(self, wachttijd=0.5):
         if not self.actief:
