@@ -112,8 +112,13 @@ class AndroidContinuousListener:
             self.luistert = True
             self._status("MICROFOON START...")
 
-            self._annuleer_watchdog()
-            self.watchdog_event = Clock.schedule_once(self._controleer_callback, 6.0)
+            # Watchdog tijdelijk uitgeschakeld.
+            # Op deze oudere tablet veroorzaakt cancel/herstart
+            # een beëindiging van het Python-proces.
+            print(
+                "[ANDROID LISTENER]: "
+                "WACHT OP CALLBACK ZONDER AUTOMATISCHE HERSTART"
+            )
 
         except Exception as fout:
             self.luistert = False
