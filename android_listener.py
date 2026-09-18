@@ -104,8 +104,9 @@ class AndroidContinuousListener:
             )
             self.intent.putExtra(
                 self.RecognizerIntent.EXTRA_LANGUAGE,
-                str(self.language)
+                "nl-NL"
             )
+            
             self.intent.putExtra(
                 "android.speech.extra.LANGUAGE",
                 "nl-NL"
