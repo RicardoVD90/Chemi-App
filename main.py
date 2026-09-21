@@ -443,9 +443,13 @@ class ChemieApp(App):
                     KLEUR_VRAAG,
                     KLEUR_TEKST_DONKER
                 )
-    
+                
                 self.speel_geluid(
                     self.ping_sound
+                )
+                
+                self.assistent_spreekt(
+                    "Wat kan ik voor u doen?"
                 )
     
                 Clock.schedule_once(
