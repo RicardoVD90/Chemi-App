@@ -494,6 +494,7 @@ class ChemieApp(App):
     def verwerk_android_opdracht(self, tekst):
         self.log_status(f"OPDRACHT GEHOORD: {tekst}")
         stof_id = self.vind_beste_stof(tekst)
+        print(f"[ANDROID STOFMATCH\]: {stof_id}")
         if not stof_id:
             self.update_ui("STOF NIET HERKEND", KLEUR_VRAAG, KLEUR_TEKST_DONKER)
             Clock.schedule_once(lambda dt: self.update_ui("CHEMI", BG_STANDBY, KLEUR_TEKST_DONKER), 3)
