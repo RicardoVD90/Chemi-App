@@ -845,10 +845,7 @@ class ChemieApp(App):
         self.update_ui("CHEMI", BG_STANDBY, KLEUR_TEKST_DONKER)
 
     def automatische_map_scanner(self):
-        while True:
-            time.sleep(5)
-            if not self.nood_actief:
-                self.lab_database.update(self.laad_stoffen())
+        pass
 
     def normaliseer_stofnaam(self, tekst):
         return re.sub(r"[^a-z0-9]+", "", str(tekst).lower().strip())
