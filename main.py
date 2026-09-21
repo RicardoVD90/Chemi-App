@@ -601,30 +601,80 @@ class ChemieApp(App):
 
     def assistent_spreekt(self, tekst):
         if platform == "android":
-            print(
-                f"[ANDROID TTS TEST]: {tekst}"
-            )
+            try:
+                from jnius import autoclass
+    
+                Locale = autoclass("java.util.Locale")
+                TextToSpeech = autoclass("android.speech.tts.TextToSpeech")
+                PythonActivity = autoclass(
+                    "org.kivy.android.PythonActivity"
+                )
+    
+                activiteit = PythonActivity.mActivity
+    
+                tts = TextToSpeech(
+                    activiteit,
+                    None
+                )
+    
+                tts.setLanguage(
+                    Locale("nl", "NL")
+                )
+    
+                tts.speak(
+                    str(tekst),
+                    TextToSpeech.QUEUE_FLUSH,
+                    None,
+                    "CHEMI"
+                )
+    
+                print(
+                    f"[ANDROID TTS\]: {tekst}"
+                )
+    
+            except Exception as fout:
+                print(
+                    f"[ANDROID TTS FOUT\]: {fout}"
+                )
+    
             return
-
+    
         if edge_tts is None:
             return
-            bestandsnaam = os.path.join(self.DATA_DIR, f"spraak_{int(time.time() * 1000)}.mp3")
-            try:
-                asyncio.run(edge_tts.Communicate(tekst, "nl-NL-FennaNeural").save(bestandsnaam))
-                geluid = SoundLoader.load(bestandsnaam)
-                if geluid:
-                    geluid.play()
-                    while geluid.state == "play":
-                        time.sleep(0.05)
-            except Exception as fout:
-                print(f"Spraakfout: {fout}")
-            finally:
-                if os.path.exists(bestandsnaam):
-                    try:
-                        os.remove(bestandsnaam)
-                    except OSError:
-                        pass
-
+    
+        bestandsnaam = os.path.join(
+            self.DATA_DIR,
+            f"spraak_{int(time.time() * 1000)}.mp3"
+        )
+    
+        try:
+            asyncio.run(
+                edge_tts.Communicate(
+                    tekst,
+                    "nl-NL-FennaNeural"
+                ).save(bestandsnaam)
+            )
+    
+            geluid = SoundLoader.load(
+                bestandsnaam
+            )
+    
+            if geluid:
+                geluid.play()
+    
+                while geluid.state == "play":
+                    time.sleep(0.05)
+    
+        except Exception as fout:
+            print(f"Spraakfout: {fout}")
+    
+        finally:
+            if os.path.exists(bestandsnaam):
+                try:
+                    os.remove(bestandsnaam)
+                except OSError:
+                    pass
+                
     def initialiseer_audio_en_loop(self):
         try:
             self.schoonmaak_bij_opstart()
