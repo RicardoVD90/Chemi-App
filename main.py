@@ -596,10 +596,13 @@ class ChemieApp(App):
 
     def assistent_spreekt(self, tekst):
         if platform == "android":
-            print(f"[Android TTS nog uitgeschakeld]: {tekst}")
+            print(
+                f"[ANDROID TTS TEST]: {tekst}"
+            )
             return
-        if edge_tts is None:
-            return
+
+    if edge_tts is None:
+        return
         bestandsnaam = os.path.join(self.DATA_DIR, f"spraak_{int(time.time() * 1000)}.mp3")
         try:
             asyncio.run(edge_tts.Communicate(tekst, "nl-NL-FennaNeural").save(bestandsnaam))
