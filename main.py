@@ -621,11 +621,14 @@ class ChemieApp(App):
                     Locale("nl", "NL")
                 )
     
+                HashMap = autoclass("java.util.HashMap")
+
+                params = HashMap()
+                
                 tts.speak(
                     str(tekst),
                     TextToSpeech.QUEUE_FLUSH,
-                    None,
-                    "CHEMI"
+                    params
                 )
     
                 print(
