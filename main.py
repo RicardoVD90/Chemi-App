@@ -877,40 +877,70 @@ class ChemieApp(App):
             print(f"Fout bij uitlezen PDF {pdf_pad}: {fout}")
             return None
 
-    def laad_stoffen(self):
-        database = {}
-        if os.path.exists(STOFFEN_CSV):
-            try:
-                with open(STOFFEN_CSV, "r", encoding="utf-8-sig") as bestand:
-                    eerste = bestand.readline()
-                    bestand.seek(0)
-                    for rij in csv.DictReader(bestand, delimiter=";" if ";" in eerste else ","):
-                        schoon = {str(k).strip().lower(): str(v).strip() for k, v in rij.items() if k and v is not None}
-                        naam = schoon.get("stof", next(iter(schoon.values()), ""))
-                        if naam:
-                            database[self.normaliseer_stofnaam(naam)] = {
-                                "naam": naam, "pbm_lab": schoon.get("pbm_lab", ""),
-                                "pbm_fabriek": schoon.get("pbm_fabriek", ""),
-                                "pbm_pic_lab": schoon.get("pbm_pic_lab", ""),
-                                "pbm_pic_fabriek": schoon.get("pbm_pic_fabriek", ""),
-                                "pictogram": schoon.get("pictogram", ""),
-                                "n_ogen": next((v for k, v in schoon.items() if "ogen" in k), ""),
-                                "msds": schoon.get("msds", ""),
-                                "gevaren": schoon.get("gevaren", "Er zijn geen specifieke gevaren bekend.")
-                            }
-            except Exception as fout:
-                print(f"Fout bij laden CSV: {fout}")
-        if os.path.exists(MSDS_DIR):
-            for naam in os.listdir(MSDS_DIR):
-                if naam.lower().endswith(".pdf"):
-                    sid = self.normaliseer_stofnaam(os.path.splitext(naam)[0])
-                    if sid not in database:
-                        data = self.analyseer_msds_pdf(os.path.join(MSDS_DIR, naam))
-                        if data:
-                            database[sid] = data
-        print(f"Aantal geladen stoffen: {len(database)}")
+def laad_stoffen(self):
+    """
+    Bouwt de stoffendatabase uitsluitend op uit PDF-bestanden.
+
+    De PDF-bestanden worden hier nog niet inhoudelijk gelezen.
+    Daardoor start de app sneller en kan iedere stof direct
+    worden herkend aan de bestandsnaam.
+    """
+
+    database = {}
+
+    if not os.path.exists(MSDS_DIR):
+        print(
+            f"[DATABASE FOUT\]: MSDS-map bestaat niet: {MSDS_DIR}"
+        )
         return database
 
+    try:
+        pdf_bestanden = sorted(
+            bestand
+            for bestand in os.listdir(MSDS_DIR)
+            if bestand.lower().endswith(".pdf")
+        )
+
+        for bestand in pdf_bestanden:
+            stofnaam = os.path.splitext(bestand)[0].strip()
+
+            stof_id = self.normaliseer_stofnaam(
+                stofnaam
+            )
+
+            if not stof_id:
+                continue
+
+            database[stof_id] = {
+                "naam": stofnaam,
+                "pbm_lab": "",
+                "pbm_fabriek": "",
+                "pbm_pic_lab": "",
+                "pbm_pic_fabriek": "",
+                "pictogram": "",
+                "n_ogen": "",
+                "msds": bestand,
+                "gevaren": "",
+                "pdf_geanalyseerd": False
+            }
+
+            print(
+                "[PDF STOF GEREGISTREERD\]: "
+                f"{stof_id} -> {bestand}"
+            )
+
+    except Exception as fout:
+        print(
+            "[DATABASE FOUT\]: "
+            f"{type(fout).__name__}: {fout}"
+        )
+
+    print(
+        f"[DATABASE\]: {len(database)} stoffen "
+        "geladen uit PDF-bestandsnamen"
+    )
+
+    return database
     def vind_beste_stof(self, opdracht):
         if not opdracht or not self.lab_database:
             return None
