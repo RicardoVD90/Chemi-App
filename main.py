@@ -672,6 +672,9 @@ class ChemieApp(App):
         locatie = self.gekozen_locatie or "lab"
         pics = info.get("pbm_pic_lab", "") if locatie == "lab" else info.get("pbm_pic_fabriek", "")
         self.update_ui(info.get("naam", "ONBEKENDE STOF"), KLEUR_LUISTEREN, "#FFFFFF", pics)
+        self.assistent_spreekt(
+            f"PBM informatie gevonden voor {info.get('naam', '')}"
+        )
         time.sleep(3)
         self.wacht_op_locatie = False
         self.huidige_spraak_info = None
