@@ -601,24 +601,24 @@ class ChemieApp(App):
             )
             return
 
-    if edge_tts is None:
-        return
-        bestandsnaam = os.path.join(self.DATA_DIR, f"spraak_{int(time.time() * 1000)}.mp3")
-        try:
-            asyncio.run(edge_tts.Communicate(tekst, "nl-NL-FennaNeural").save(bestandsnaam))
-            geluid = SoundLoader.load(bestandsnaam)
-            if geluid:
-                geluid.play()
-                while geluid.state == "play":
-                    time.sleep(0.05)
-        except Exception as fout:
-            print(f"Spraakfout: {fout}")
-        finally:
-            if os.path.exists(bestandsnaam):
-                try:
-                    os.remove(bestandsnaam)
-                except OSError:
-                    pass
+        if edge_tts is None:
+            return
+            bestandsnaam = os.path.join(self.DATA_DIR, f"spraak_{int(time.time() * 1000)}.mp3")
+            try:
+                asyncio.run(edge_tts.Communicate(tekst, "nl-NL-FennaNeural").save(bestandsnaam))
+                geluid = SoundLoader.load(bestandsnaam)
+                if geluid:
+                    geluid.play()
+                    while geluid.state == "play":
+                        time.sleep(0.05)
+            except Exception as fout:
+                print(f"Spraakfout: {fout}")
+            finally:
+                if os.path.exists(bestandsnaam):
+                    try:
+                        os.remove(bestandsnaam)
+                    except OSError:
+                        pass
 
     def initialiseer_audio_en_loop(self):
         try:
