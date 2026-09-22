@@ -33,7 +33,6 @@ from kivy.graphics import Color, Rectangle
 from kivy.animation import Animation
 from kivy.properties import NumericProperty
 
-if platform != "android":
     try:
         import edge_tts
     except ImportError:
@@ -601,36 +600,9 @@ class ChemieApp(App):
         threading.Thread(target=self.initialiseer_audio_en_loop, daemon=True).start()
 
     def assistent_spreekt(self, tekst):
-        if platform == "android":
-            try:
-                from jnius import autoclass
-    
-                HashMap = autoclass("java.util.HashMap")
-                TextToSpeech = autoclass(
-                    "android.speech.tts.TextToSpeech"
-                )
-                
-                params = HashMap()
-                
-                if self.tts:
-                    self.tts.speak(
-                        str(tekst),
-                        TextToSpeech.QUEUE_FLUSH,
-                        params
-                    )
-    
-                print(
-                    f"[ANDROID TTS\]: {tekst}"
-                )
-    
-            except Exception as fout:
-                print(
-                    f"[ANDROID TTS FOUT\]: {fout}"
-                )
-    
-            return
     
         if edge_tts is None:
+            print("[EDGE TTS FOUT]: edge_ttts niet geladen")
             return
     
         bestandsnaam = os.path.join(
@@ -641,7 +613,7 @@ class ChemieApp(App):
         try:
             asyncio.run(
                 edge_tts.Communicate(
-                    tekst,
+                    str(tekst),
                     "nl-NL-FennaNeural"
                 ).save(bestandsnaam)
             )
@@ -656,66 +628,72 @@ class ChemieApp(App):
                 while geluid.state == "play":
                     time.sleep(0.05)
     
+            print(
+                f"[EDGE TTS\]: {tekst}"
+            )
+    
         except Exception as fout:
-            print(f"Spraakfout: {fout}")
+            print(
+                f"[EDGE TTS FOUT\]: {fout}"
+            )
     
         finally:
             if os.path.exists(bestandsnaam):
                 try:
                     os.remove(bestandsnaam)
-                except OSError:
+                except Exception:
                     pass
-                
-    def initialiseer_audio_en_loop(self):
-        try:
-            self.schoonmaak_bij_opstart()
-            self.lab_database = self.laad_stoffen()
-    
-            if platform == "android":
-                try:
-                    from jnius import autoclass
-    
-                    Locale = autoclass("java.util.Locale")
-                    TextToSpeech = autoclass(
-                        "android.speech.tts.TextToSpeech"
+                    
+        def initialiseer_audio_en_loop(self):
+            try:
+                self.schoonmaak_bij_opstart()
+                self.lab_database = self.laad_stoffen()
+        
+                if platform == "android":
+                    try:
+                        from jnius import autoclass
+        
+                        Locale = autoclass("java.util.Locale")
+                        TextToSpeech = autoclass(
+                            "android.speech.tts.TextToSpeech"
+                        )
+                        PythonActivity = autoclass(
+                            "org.kivy.android.PythonActivity"
+                        )
+        
+                        self.tts = TextToSpeech(
+                            PythonActivity.mActivity,
+                            None
+                        )
+        
+                        self.tts.setLanguage(
+                            Locale("nl", "NL")
+                        )
+        
+                        print(
+                            "[ANDROID TTS]: VOORAF GEINITIALISEERD"
+                        )
+        
+                    except Exception as fout:
+                        print(
+                            f"[ANDROID TTS INIT FOUT]: {fout}"
+                        )
+        
+                    self.log_status(
+                        "ANDROID SPRAAKSERVICE START..."
                     )
-                    PythonActivity = autoclass(
-                        "org.kivy.android.PythonActivity"
-                    )
-    
-                    self.tts = TextToSpeech(
-                        PythonActivity.mActivity,
-                        None
-                    )
-    
-                    self.tts.setLanguage(
-                        Locale("nl", "NL")
-                    )
-    
-                    print(
-                        "[ANDROID TTS]: VOORAF GEINITIALISEERD"
-                    )
-    
-                except Exception as fout:
-                    print(
-                        f"[ANDROID TTS INIT FOUT]: {fout}"
-                    )
-    
+                    return
+        
                 self.log_status(
-                    "ANDROID SPRAAKSERVICE START..."
+                    "SYSTEEM GEREED - LUISTEREND..."
                 )
-                return
-    
-            self.log_status(
-                "SYSTEEM GEREED - LUISTEREND..."
-            )
-    
-            self.hoofd_loop()
-    
-        except Exception as fout:
-            self.log_status(
-                f"OPSTARTFOUT: {fout}"
-            )
+        
+                self.hoofd_loop()
+        
+            except Exception as fout:
+                self.log_status(
+                    f"OPSTARTFOUT: {fout}"
+                )
 
     def hoofd_loop(self):
         if platform == "android":
