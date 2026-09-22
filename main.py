@@ -606,18 +606,18 @@ class ChemieApp(App):
                 from jnius import autoclass
     
                 HashMap = autoclass("java.util.HashMap")
-                    TextToSpeech = autoclass(
-                        "android.speech.tts.TextToSpeech"
+                TextToSpeech = autoclass(
+                    "android.speech.tts.TextToSpeech"
+                )
+                
+                params = HashMap()
+                
+                if self.tts:
+                    self.tts.speak(
+                        str(tekst),
+                        TextToSpeech.QUEUE_FLUSH,
+                        params
                     )
-                    
-                    params = HashMap()
-                    
-                    if self.tts:
-                        self.tts.speak(
-                            str(tekst),
-                            TextToSpeech.QUEUE_FLUSH,
-                            params
-                        )
     
                 print(
                     f"[ANDROID TTS\]: {tekst}"
