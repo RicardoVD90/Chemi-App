@@ -611,17 +611,68 @@ class ChemieApp(App):
         threading.Thread(target=self.initialiseer_audio_en_loop, daemon=True).start()
 
     def assistent_spreekt(self, tekst):
+        if platform == "android":
+            try:
+                from jnius import autoclass
+    
+                TextToSpeech = autoclass(
+                    "android.speech.tts.TextToSpeech"
+                )
+    
+                HashMap = autoclass(
+                    "java.util.HashMap"
+                )
+    
+                PythonActivity = autoclass(
+                    "org.kivy.android.PythonActivity"
+                )
+    
+                Locale = autoclass(
+                    "java.util.Locale"
+                )
+    
+                activiteit = PythonActivity.mActivity
+    
+                tts = TextToSpeech(
+                    activiteit,
+                    None
+                )
+    
+                tts.setLanguage(
+                    Locale("nl", "NL")
+                )
+    
+                params = HashMap()
+    
+                tts.speak(
+                    str(tekst),
+                    TextToSpeech.QUEUE_FLUSH,
+                    params
+                )
+    
+                print(
+                    f"[ANDROID TTS\]: {tekst}"
+                )
+    
+            except Exception as fout:
+                print(
+                    "[ANDROID TTS FOUT\]: "
+                    f"{type(fout).__name__}: {fout}"
+                )
+    
+            return
+    
         if edge_tts is None:
             print(
                 "[EDGE TTS FOUT\]: edge_tts is niet geladen"
             )
             return
-
+    
         bestandsnaam = os.path.join(
             self.DATA_DIR,
             f"spraak_{int(time.time() * 1000)}.mp3"
         )
-
+    
         try:
             asyncio.run(
                 edge_tts.Communicate(
@@ -629,33 +680,33 @@ class ChemieApp(App):
                     "nl-NL-FennaNeural"
                 ).save(bestandsnaam)
             )
-
+    
             geluid = SoundLoader.load(
                 bestandsnaam
             )
-
+    
             if not geluid:
                 print(
                     "[EDGE TTS FOUT\]: "
                     "Het MP3-bestand kon niet worden geladen"
                 )
                 return
-
+    
             geluid.play()
-
+    
             while geluid.state == "play":
                 time.sleep(0.05)
-
+    
             print(
                 f"[EDGE TTS\]: {tekst}"
             )
-
+    
         except Exception as fout:
             print(
                 "[EDGE TTS FOUT\]: "
                 f"{type(fout).__name__}: {fout}"
             )
-
+    
         finally:
             if os.path.exists(bestandsnaam):
                 try:
