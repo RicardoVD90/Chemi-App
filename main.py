@@ -118,6 +118,7 @@ class ChemieApp(App):
         self.huidige_spraak_info = None
         self.laatste_noodactie = 0
         self.android_spraak_actief = False
+        self.tts = None
 
         self.DATA_DIR = self.user_data_dir
         self.TEMP_PDF_DIR = os.path.join(self.DATA_DIR, "temp_pdf")
@@ -604,32 +605,16 @@ class ChemieApp(App):
             try:
                 from jnius import autoclass
     
-                Locale = autoclass("java.util.Locale")
-                TextToSpeech = autoclass("android.speech.tts.TextToSpeech")
-                PythonActivity = autoclass(
-                    "org.kivy.android.PythonActivity"
-                )
-    
-                activiteit = PythonActivity.mActivity
-    
-                tts = TextToSpeech(
-                    activiteit,
-                    None
-                )
-    
-                tts.setLanguage(
-                    Locale("nl", "NL")
-                )
-    
                 HashMap = autoclass("java.util.HashMap")
 
                 params = HashMap()
                 
-                tts.speak(
-                    str(tekst),
-                    TextToSpeech.QUEUE_FLUSH,
-                    params
-                )
+                if self.tts:
+                    self.tts.speak(
+                        str(tekst),
+                        TextToSpeech.QUEUE_FLUSH,
+                        params
+                    )
     
                 print(
                     f"[ANDROID TTS\]: {tekst}"
@@ -682,14 +667,52 @@ class ChemieApp(App):
         try:
             self.schoonmaak_bij_opstart()
             self.lab_database = self.laad_stoffen()
-            threading.Thread(target=self.automatische_map_scanner, daemon=True).start()
+    
             if platform == "android":
-                self.log_status("ANDROID SPRAAKSERVICE START...")
+                try:
+                    from jnius import autoclass
+    
+                    Locale = autoclass("java.util.Locale")
+                    TextToSpeech = autoclass(
+                        "android.speech.tts.TextToSpeech"
+                    )
+                    PythonActivity = autoclass(
+                        "org.kivy.android.PythonActivity"
+                    )
+    
+                    self.tts = TextToSpeech(
+                        PythonActivity.mActivity,
+                        None
+                    )
+    
+                    self.tts.setLanguage(
+                        Locale("nl", "NL")
+                    )
+    
+                    print(
+                        "[ANDROID TTS]: VOORAF GEINITIALISEERD"
+                    )
+    
+                except Exception as fout:
+                    print(
+                        f"[ANDROID TTS INIT FOUT]: {fout}"
+                    )
+    
+                self.log_status(
+                    "ANDROID SPRAAKSERVICE START..."
+                )
                 return
-            self.log_status("SYSTEEM GEREED - LUISTEREND...")
+    
+            self.log_status(
+                "SYSTEEM GEREED - LUISTEREND..."
+            )
+    
             self.hoofd_loop()
+    
         except Exception as fout:
-            self.log_status(f"OPSTARTFOUT: {fout}")
+            self.log_status(
+                f"OPSTARTFOUT: {fout}"
+            )
 
     def hoofd_loop(self):
         if platform == "android":
