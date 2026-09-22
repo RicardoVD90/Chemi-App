@@ -9,6 +9,7 @@ import difflib
 from pathlib import Path
 from pypdf import PdfReader
 
+
 from kivy.config import Config
 Config.set("graphics", "multisamples", "0")
 Config.set("graphics", "always_on_top", "0")
@@ -32,6 +33,7 @@ from kivy.core.audio import SoundLoader
 from kivy.graphics import Color, Rectangle
 from kivy.animation import Animation
 from kivy.properties import NumericProperty
+from pdf_renderer import AndroidPdfRenderCache
 
 try:
     import edge_tts
@@ -122,6 +124,9 @@ class ChemieApp(App):
 
         self.DATA_DIR = self.user_data_dir
         self.TEMP_PDF_DIR = os.path.join(self.DATA_DIR, "temp_pdf")
+        self.RENDERED_MSDS_DIR = os.path.join(self.DATA_DIR, "rendered_msds")
+        self.pdf_renderer = AndroidPdfRenderCache(
+        self.RENDERED_MSDS_DIR,schaal=1.5,logger=print)
         self.NOODLOG_PAD = os.path.join(self.DATA_DIR, "noodlog.csv")
         self.maak_schrijfbare_mappen()
         self.alarm_sound = self.laad_geluid("alarm.wav")
@@ -199,6 +204,8 @@ class ChemieApp(App):
             self.pdf_controls.add_widget(widget)
         self.root_layout.add_widget(self.pdf_scroll_view)
         self.root_layout.add_widget(self.pdf_controls)
+
+        self.pdf_pagina_paden = []
 
         Clock.schedule_once(self.start_intro_sequentie, 0.5)
         return self.root_layout
@@ -352,7 +359,15 @@ class ChemieApp(App):
             threading.Thread(target=self.vraag_locatie_en_antwoord, args=(info,), daemon=True).start()
 
     def maak_schrijfbare_mappen(self):
-        os.makedirs(self.TEMP_PDF_DIR, exist_ok=True)
+        os.makedirs(
+            self.TEMP_PDF_DIR,
+            exist_ok=True
+        )
+    
+        os.makedirs(
+            self.RENDERED_MSDS_DIR,
+            exist_ok=True
+        )
 
     def asset_pad(self, naam): return os.path.join(ASSETS_DIR, naam)
     def pictogram_pad(self, naam): return os.path.join(PICTO_DIR, naam)
@@ -443,12 +458,38 @@ class ChemieApp(App):
             if os.path.exists(bestand): os.remove(bestand)
 
     def initialiseer_audio_en_loop(self):
-        self.schoonmaak_bij_opstart()
-        self.lab_database = self.laad_stoffen()
-        if platform == "android":
-            self.log_status("ANDROID SPRAAKSERVICE START...")
-            return
-        self.hoofd_loop()
+        try:
+            self.schoonmaak_bij_opstart()
+            self.lab_database = self.laad_stoffen()
+    
+            if platform == "android":
+                threading.Thread(
+                    target=self.pdf_renderer.render_alle,
+                    args=(MSDS_DIR,),
+                    daemon=True
+                ).start()
+    
+                self.log_status(
+                    "ANDROID SPRAAKSERVICE START..."
+                )
+    
+                return
+    
+            self.log_status(
+                "SYSTEEM GEREED - LUISTEREND..."
+            )
+    
+            self.hoofd_loop()
+    
+        except Exception as fout:
+            print(
+                "[OPSTARTFOUT\]: "
+                f"{type(fout).__name__}: {fout}"
+            )
+    
+            self.log_status(
+                f"OPSTARTFOUT: {fout}"
+            )
 
     def hoofd_loop(self):
         if platform == "android" or sr is None: return
@@ -527,35 +568,51 @@ class ChemieApp(App):
             schrijver.writerow([time.strftime("%Y-%m-%d %H:%M:%S"), stof])
 
     # PDF VIEWER
-    def toon_pdf_in_app(self, pdf_pad):
-        print(f"[PDF]: OPENEN: {pdf_pad}")
+    def toon_pdf_in_app(self, pdf_pad, pagina_paden):
         self.pdf_open = True
         self.pdf_is_pauze = False
         self.systeem_bezet = True
         self.huidige_pdf_index = 0
-        if self.pdf_scroll_event:
-            self.pdf_scroll_event.cancel(); self.pdf_scroll_event = None
-        try:
-            reader = PdfReader(pdf_pad)
-            self.pdf_paginas_tekst = [p.extract_text() or "Geen leesbare tekst op deze pagina." for p in reader.pages]
-            print(f"[PDF]: {len(self.pdf_paginas_tekst)} PAGINA'S GELADEN")
-        except Exception as fout:
-            print(f"[PDF FOUT]: {type(fout).__name__}: {fout}")
-            self.pdf_paginas_tekst = ["De PDF kon niet worden geladen."]
-        self.totaal_pdf_paginas = max(1, len(self.pdf_paginas_tekst))
-        if not hasattr(self, "pdf_text_label"):
-            self.pdf_text_label = Label(font_name=GEBRUIK_FONT, font_size="22sp",
-                                         color=get_color_from_hex(KLEUR_TEKST_DONKER), size_hint_y=None,
-                                         halign="left", valign="top", padding=(20, 20))
-            self.pdf_text_label.bind(width=lambda i, w: setattr(i, "text_size", (max(w - 40, 100), None)))
-            self.pdf_text_label.bind(texture_size=lambda i, s: setattr(i, "height", s[1] + 40))
-            self.pdf_scroll_view.add_widget(self.pdf_text_label)
+        self.pdf_pagina_paden = list(pagina_paden)
+        self.totaal_pdf_paginas = len(self.pdf_pagina_paden)
+    
+        if not hasattr(self, "pdf_page_image"):
+            self.pdf_page_image = Image(
+                source="",
+                size_hint_y=None,
+                allow_stretch=True,
+                keep_ratio=True
+            )
+            self.pdf_page_image.bind(texture=self._pdf_texture_veranderd)
+            self.pdf_page_image.bind(width=self._pdf_breedte_veranderd)
+            self.pdf_scroll_view.add_widget(self.pdf_page_image)
+    
         self.ui.opacity = 0
         self.pdf_scroll_view.opacity = 1
-        Animation(pos_hint={"center_x": 0.52, "y": 0.02}, opacity=1, duration=0.4).start(self.pdf_controls)
-        self.btn_pauze.background_normal = self.asset_pad("pauze_knop.png")
+        Animation(
+            pos_hint={"center_x": 0.52, "y": 0.02},
+            opacity=1,
+            duration=0.4
+        ).start(self.pdf_controls)
         self.scroll_pagina(0, self.totaal_pdf_paginas)
         self.start_pdf_auto_scroll()
+
+    def _pdf_texture_veranderd(self, instance, texture):
+        if texture and texture.width > 0:
+            instance.height = instance.width * texture.height / texture.width
+
+    def _pdf_breedte_veranderd(self, instance, breedte):
+        if instance.texture and instance.texture.width > 0:
+            instance.height = breedte * instance.texture.height / instance.texture.width
+
+    def scroll_pagina(self, index, totaal):
+        if not self.pdf_open or not 0 <= index < totaal:
+            return
+        self.huidige_pdf_index = index
+        self.pdf_page_image.source = self.pdf_pagina_paden[index]
+        self.pdf_page_image.reload()
+        self.pdf_scroll_view.scroll_y = 1.0
+        print(f"[PDF]: PAGINA {index + 1}/{totaal} GETOOND")
 
     def start_pdf_auto_scroll(self):
         if not self.pdf_open: return
@@ -595,13 +652,6 @@ class ChemieApp(App):
             self.pauzeer_pdf_scroll()
             print("[PDF]: HANDMATIGE SWIPE GEDETECTEERD")
         return False
-
-    def scroll_pagina(self, index, totaal):
-        if not self.pdf_open or not 0 <= index < totaal: return
-        self.huidige_pdf_index = index
-        self.pdf_text_label.text = f"Pagina {index + 1} van {totaal}\n\n{self.pdf_paginas_tekst[index]}"
-        self.pdf_scroll_view.scroll_y = 1.0
-        print(f"[PDF]: PAGINA {index + 1} VAN {totaal} GETOOND")
 
     def wissel_pagina(self, richting):
         if not self.pdf_open: return
@@ -679,12 +729,29 @@ class ChemieApp(App):
 
     def open_msds(self, info):
         pdf = info.get("msds", "")
-        pad = os.path.join(MSDS_DIR, pdf)
-        if pdf and os.path.exists(pad):
-            print(f"[PDF]: BESTAND GEVONDEN: {pad}")
-            Clock.schedule_once(lambda dt: self.toon_pdf_in_app(pad))
-        else:
-            print(f"[PDF FOUT]: BESTAND NIET GEVONDEN: {pad}")
+        pdf_pad = os.path.join(MSDS_DIR, pdf)
+        if not pdf or not os.path.exists(pdf_pad):
+            print(f"[PDF FOUT]: BESTAND NIET GEVONDEN: {pdf_pad}")
+            return
+
+        self.update_ui("PDF LADEN...", KLEUR_KEUZE, "#FFFFFF")
+
+        def laden():
+            paginas = self.pdf_renderer.pagina_paden(pdf_pad)
+            if not paginas:
+                paginas = self.pdf_renderer.render(pdf_pad)
+            if paginas:
+                Clock.schedule_once(
+                    lambda dt: self.toon_pdf_in_app(pdf_pad, paginas)
+                )
+            else:
+                Clock.schedule_once(
+                    lambda dt: self.update_ui(
+                        "PDF KON NIET WORDEN GERENDERD", KLEUR_NOOD, "#FFFFFF"
+                    )
+                )
+
+        threading.Thread(target=laden, daemon=True).start()
 
     def schoonmaak_bij_opstart(self):
         try:
