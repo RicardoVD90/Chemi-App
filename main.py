@@ -1,4 +1,5 @@
 import os
+print("========== VERSIE 22-09-2026 ==========")
 import csv
 import time
 import re
@@ -37,12 +38,12 @@ try:
     import edge_tts
 
     print(
-        "[EDGE TTS IMPORT]: MODULE SUCCESVOL GELADEN"
+        "[EDGE TTS IMPORT]: MODULE SUCCESVOLL GELADEN"
     )
 
 except Exception as fout:
     print(
-        "[EDGE TTS IMPORT FOUT]: "
+        "[EDGE TTS IMPORT FOUT\]: "
         f"{type(fout).__name__}: {fout}"
     )
 
