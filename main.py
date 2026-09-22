@@ -35,7 +35,17 @@ from kivy.properties import NumericProperty
 
 try:
     import edge_tts
-except ImportError:
+
+    print(
+        "[EDGE TTS IMPORT]: MODULE SUCCESVOL GELADEN"
+    )
+
+except Exception as fout:
+    print(
+        "[EDGE TTS IMPORT FOUT]: "
+        f"{type(fout).__name__}: {fout}"
+    )
+
     edge_tts = None
 
 if platform != "android":
@@ -118,7 +128,6 @@ class ChemieApp(App):
         self.huidige_spraak_info = None
         self.laatste_noodactie = 0
         self.android_spraak_actief = False
-        self.tts = None
 
         self.DATA_DIR = self.user_data_dir
         self.TEMP_PDF_DIR = os.path.join(self.DATA_DIR, "temp_pdf")
