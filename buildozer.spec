@@ -12,7 +12,7 @@ source.include_patterns = assets/*,pictogrammen/*,msds/*
 
 version = 0.1
 
-requirements = python3==3.10.11,hostpython3==3.10.11,kivy,pypdf,requests,pyjnius
+requirements = python3==3.10.11,hostpython3==3.10.11,kivy,pypdf,requests,pyjnius,edge-tts
 
 orientation = landscape
 
