@@ -12,13 +12,13 @@ source.include_patterns = assets/*,pictogrammen/*,msds/*
 
 version = 0.1
 
-requirements = python3==3.10.11,hostpython3==3.10.11,kivy,pypdf,requests,pyjnius,edge-tts
+requirements = python3==3.10.11,hostpython3==3.10.11,kivy,pypdf,typing_extensions,requests,pyjnius,edge-tts,aiohttp,certifi,tabulate
 
 orientation = landscape
 
 fullscreen = 1
 
-android.permissions = RECORD_AUDIO,READ_EXTERNAL_STORAGE,WRITE_EXTERNAL_STORAGE
+android.permissions = INTERNET,RECORD_AUDIO,READ_EXTERNAL_STORAGE,WRITE_EXTERNAL_STORAGE
 
 android.accept_sdk_license = True
 
