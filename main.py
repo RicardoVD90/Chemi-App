@@ -983,7 +983,7 @@ class ChemieApp(App):
             
             if "ghs01" in zoekgebied_gevaren:
                 gevonden_gevaren_pics.append(
-                    "explosief.png"
+                    "Explosief.png"
                 )
             
             if "ghs02" in zoekgebied_gevaren:
@@ -998,7 +998,7 @@ class ChemieApp(App):
             
             if "ghs04" in zoekgebied_gevaren:
                 gevonden_gevaren_pics.append(
-                    "gassen.png"
+                    "Gassen.png"
                 )
             
             if (
@@ -1013,7 +1013,7 @@ class ChemieApp(App):
             
             if "ghs06" in zoekgebied_gevaren:
                 gevonden_gevaren_pics.append(
-                    "giftig.png"
+                    "Giftig.png"
                 )
             
             if "ghs07" in zoekgebied_gevaren:
@@ -1026,12 +1026,12 @@ class ChemieApp(App):
                 or "stot se" in zoekgebied_gevaren
             ):
                 gevonden_gevaren_pics.append(
-                    "ongezond.png"
+                    "Ongezond.png"
                 )
             
             if "ghs09" in zoekgebied_gevaren:
                 gevonden_gevaren_pics.append(
-                    "milieu.png"
+                    "Milieu.png"
                 )
             
             print(
