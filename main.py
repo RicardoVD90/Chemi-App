@@ -191,10 +191,18 @@ class ChemieApp(App):
                                           do_scroll_x=False, do_scroll_y=True, opacity=0)
         self.pdf_scroll_view.bind(on_scroll_start=self.handmatige_scroll_detectie)
         self.pdf_pagina_label = Label(
-            text="Pagina 1 / 17",
+            text="Pagina 1 / 1",
             size_hint=(None, None),
             size=(250, 50),
-            pos_hint={"right": 0.98, "top": 0.98}
+            pos_hint={"right": 0.98, "top": 0.98},
+            font_size="20sp",
+            bold=True,
+            color=get_color_from_hex(KLEUR_TEKST_DONKER),
+            opacity=0
+        )
+        
+        self.root_layout.add_widget(
+            self.pdf_pagina_label
         )
         self.pdf_controls = BoxLayout(orientation="horizontal", size_hint=(None, None), size=(550, 110),
                                       pos_hint={"center_x": 0.52, "y": -0.2}, padding=10, spacing=20, opacity=0)
@@ -517,20 +525,134 @@ class ChemieApp(App):
         self.systeem_bezet = True
         self.gekozen_locatie = None
         self.keuze_event.clear()
-        self.update_ui("KIES LOCATIE", KLEUR_KEUZE, "#FFFFFF", info.get("pictogram", ""))
-        Clock.schedule_once(lambda dt: Animation(pos_hint={"center_x": 0.5, "y": 0.1}, opacity=1, duration=0.5).start(self.btn_layout_locatie))
-        if platform == "android": self.wacht_op_locatie = True
+    
+        self.update_ui(
+            "KIES LOCATIE",
+            KLEUR_KEUZE,
+            "#FFFFFF",
+            info.get("pictogram", "")
+        )
+    
+        Clock.schedule_once(
+            lambda dt: Animation(
+                pos_hint={
+                    "center_x": 0.5,
+                    "y": 0.1
+                },
+                opacity=1,
+                duration=0.5
+            ).start(
+                self.btn_layout_locatie
+            )
+        )
+    
+        if platform == "android":
+            self.wacht_op_locatie = True
+            self.huidige_spraak_info = info
+    
+        self.assistent_spreekt(
+            "Is dit voor het laboratorium "
+            "of voor de fabriek?"
+        )
+    
         start = time.time()
-        while not self.keuze_event.is_set() and time.time() - start < 15: time.sleep(0.1)
-        locatie = self.gekozen_locatie or "lab"
-        pics = info.get("pbm_pic_lab", "") if locatie == "lab" else info.get("pbm_pic_fabriek", "")
-        self.update_ui(info.get("naam", "ONBEKENDE STOF"), KLEUR_LUISTEREN, "#FFFFFF", pics)
-        self.assistent_spreekt(f"PBM informatie gevonden voor {info.get('naam', '')}")
-        time.sleep(3)
+    
+        while (
+            not self.keuze_event.is_set()
+            and time.time() - start < 15
+        ):
+            time.sleep(0.1)
+    
+        locatie = (
+            self.gekozen_locatie
+            or "lab"
+        )
+    
+        if locatie == "lab":
+            locatie_naam = "laboratorium"
+    
+            pbm_tekst = info.get(
+                "pbm_lab",
+                ""
+            )
+    
+            pbm_pics = info.get(
+                "pbm_pic_lab",
+                ""
+            )
+    
+        else:
+            locatie_naam = "fabriek"
+    
+            pbm_tekst = info.get(
+                "pbm_fabriek",
+                ""
+            )
+    
+            pbm_pics = info.get(
+                "pbm_pic_fabriek",
+                ""
+            )
+    
+        if not pbm_tekst:
+            pbm_tekst = (
+                "De vereiste persoonlijke "
+                "beschermingsmiddelen konden niet "
+                "betrouwbaar worden vastgesteld. "
+                "Controleer de geldende PBM matrix, "
+                "werkvergunning en werkinstructie."
+            )
+    
+        print(
+            "[PBM RESULTAAT]: "
+            f"STOF={info.get('naam', '')}; "
+            f"LOCATIE={locatie_naam}; "
+            f"TEKST={pbm_tekst}; "
+            f"PICTOGRAMMEN={pbm_pics or 'GEEN'}"
+        )
+    
+        self.update_ui(
+            info.get(
+                "naam",
+                "ONBEKENDE STOF"
+            ),
+            KLEUR_LUISTEREN,
+            "#FFFFFF",
+            pbm_pics
+        )
+    
+        self.assistent_spreekt(
+            f"De persoonlijke beschermingsmiddelen "
+            f"voor {info.get('naam', 'deze stof')} "
+            f"in het {locatie_naam} zijn: "
+            f"{pbm_tekst}"
+        )
+    
+        # Wacht iets langer zodat de PBM’s zichtbaar blijven.
+        time.sleep(8)
+    
         self.wacht_op_locatie = False
+        self.huidige_spraak_info = None
         self.systeem_bezet = False
-        Clock.schedule_once(lambda dt: Animation(pos_hint={"center_x": 0.5, "y": -0.3}, opacity=0, duration=0.3).start(self.btn_layout_locatie))
-        self.update_ui("CHEMI", BG_STANDBY, KLEUR_TEKST_DONKER)
+    
+        Clock.schedule_once(
+            lambda dt: Animation(
+                pos_hint={
+                    "center_x": 0.5,
+                    "y": -0.3
+                },
+                opacity=0,
+                duration=0.3
+            ).start(
+                self.btn_layout_locatie
+            )
+        )
+    
+        self.update_ui(
+            "CHEMI",
+            BG_STANDBY,
+            KLEUR_TEKST_DONKER
+        )
 
     def start_nood_timer(self, info, minuten=15):
         self.nood_actief = self.systeem_bezet = True
@@ -635,9 +757,19 @@ class ChemieApp(App):
             return True
         volgende = self.huidige_pdf_index + 1
         if volgende < self.totaal_pdf_paginas:
-            self.scroll_pagina(volgende, self.totaal_pdf_paginas)
+            self.scroll_pagina(
+                volgende,
+                self.totaal_pdf_paginas
+            )
         else:
-            self.pauzeer_pdf_scroll()
+            print(
+                "[PDF\]: EINDE DOCUMENT - SLUITEN"
+            )
+        
+            Clock.schedule_once(
+                lambda dt: self.sluit_pdf(),
+                1
+            )
         return True
 
     def pauzeer_pdf_scroll(self):
@@ -684,36 +816,571 @@ class ChemieApp(App):
 
     def normaliseer_stofnaam(self, tekst):
         return re.sub(r"[^a-z0-9]+", "", str(tekst).lower().strip())
-
+        
+    def extraheer_rubriek(
+        self,
+        tekst,
+        nummer,
+        volgend_nummer
+    ):
+        """
+        Probeert één rubriek van een veiligheidsblad te isoleren.
+        Ondersteunt Nederlandse en Engelse benamingen.
+        """
+    
+        start_patronen = [
+            rf"(rubriek|sectie|section|hoofdstuk)\s*{nummer}\b",
+            rf"(^|\n)\s*{nummer}\s*[\.\-:]",
+        ]
+    
+        eind_patronen = [
+            rf"(rubriek|sectie|section|hoofdstuk)\s*{volgend_nummer}\b",
+            rf"(^|\n)\s*{volgend_nummer}\s*[\.\-:]",
+        ]
+    
+        start_match = None
+    
+        for patroon in start_patronen:
+            start_match = re.search(
+                patroon,
+                tekst,
+                flags=re.IGNORECASE | re.MULTILINE
+            )
+    
+            if start_match:
+                break
+    
+        if not start_match:
+            return ""
+    
+        eind_match = None
+    
+        for patroon in eind_patronen:
+            eind_match = re.search(
+                patroon,
+                tekst[start_match.end():],
+                flags=re.IGNORECASE | re.MULTILINE
+            )
+    
+            if eind_match:
+                break
+    
+        if eind_match:
+            eindpositie = (
+                start_match.end()
+                + eind_match.start()
+            )
+    
+            return tekst[
+                start_match.start():eindpositie
+            ]
+    
+        return tekst[start_match.start():]
+    
+    
+    def voeg_uniek_toe(self, lijst, waarde):
+        if waarde and waarde not in lijst:
+            lijst.append(waarde)
     def analyseer_msds_pdf(self, pdf_pad):
+        """
+        Analyseert automatisch:
+        - rubriek 2: gevaren en GHS-pictogrammen;
+        - rubriek 4: oogspoelinformatie;
+        - rubriek 8: PBM's en PBM-pictogrammen.
+    
+        Gebruikt pypdf en werkt daardoor ook in de Android-APK.
+        """
+    
         try:
+            print(
+                "[MSDS ANALYSE\]: START "
+                f"{os.path.basename(pdf_pad)}"
+            )
+    
             reader = PdfReader(pdf_pad)
-            tekst = "\n".join(p.extract_text() or "" for p in reader.pages).lower()
-            mapping = {"ghs01":"explosief.png", "ghs02":"Brandbaar.png", "ghs03":"oxiderend.png",
-                       "ghs04":"gassen.png", "ghs05":"Corrosief.png", "ghs06":"giftig.png",
-                       "ghs07":"!.png", "ghs08":"ongezond.png", "ghs09":"milieu.png"}
-            pics = [pic for code, pic in mapping.items() if code in tekst]
-            return {"naam": Path(pdf_pad).stem, "pbm_lab": "Draag de voorgeschreven beschermingsmiddelen.",
-                    "pbm_fabriek": "Draag de voorgeschreven beschermingsmiddelen.", "pbm_pic_lab": "",
-                    "pbm_pic_fabriek": "", "pictogram": ",".join(pics),
-                    "n_ogen": "Bij contact met de ogen direct spoelen.", "msds": Path(pdf_pad).name,
-                    "gevaren": "Zie het veiligheidsblad."}
+    
+            tekst_delen = []
+    
+            for pagina_nummer, pagina in enumerate(
+                reader.pages,
+                1
+            ):
+                try:
+                    pagina_tekst = (
+                        pagina.extract_text()
+                        or ""
+                    )
+    
+                    tekst_delen.append(
+                        pagina_tekst
+                    )
+    
+                except Exception as fout:
+                    print(
+                        "[MSDS ANALYSE WAARSCHUWING\]: "
+                        f"pagina {pagina_nummer}: {fout}"
+                    )
+    
+            volledige_tekst = "\n".join(
+                tekst_delen
+            )
+    
+            tekst_low = volledige_tekst.lower()
+    
+            stofnaam = Path(
+                pdf_pad
+            ).stem.strip()
+    
+            rubriek_2 = self.extraheer_rubriek(
+                tekst_low,
+                2,
+                3
+            )
+    
+            rubriek_4 = self.extraheer_rubriek(
+                tekst_low,
+                4,
+                5
+            )
+    
+            rubriek_8 = self.extraheer_rubriek(
+                tekst_low,
+                8,
+                9
+            )
+    
+            print(
+                "[MSDS ANALYSE\]: "
+                f"R2={'JA' if rubriek_2 else 'NEE'}, "
+                f"R4={'JA' if rubriek_4 else 'NEE'}, "
+                f"R8={'JA' if rubriek_8 else 'NEE'}"
+            )
+    
+            # -----------------------------------
+            # GEVARENPICTOGRAMMEN UIT RUBRIEK 2
+            # -----------------------------------
+    
+            gevonden_gevaren_pics = []
+    
+            ghs_mapping = {
+                "ghs01": "explosief.png",
+                "ghs02": "Brandbaar.png",
+                "ghs03": "oxiderend.png",
+                "ghs04": "gassen.png",
+                "ghs05": "Corrosief.png",
+                "ghs06": "giftig.png",
+                "ghs07": "!.png",
+                "ghs08": "ongezond.png",
+                "ghs09": "milieu.png",
+            }
+    
+            zoekgebied_gevaren = (
+                rubriek_2
+                if rubriek_2
+                else tekst_low
+            )
+    
+            for ghs_code, bestandsnaam in (
+                ghs_mapping.items()
+            ):
+                if ghs_code in zoekgebied_gevaren:
+                    self.voeg_uniek_toe(
+                        gevonden_gevaren_pics,
+                        bestandsnaam
+                    )
+    
+            pictogrammen_string = ",".join(
+                gevonden_gevaren_pics
+            )
+    
+            # -----------------------------------
+            # PBM'S UIT RUBRIEK 8
+            # -----------------------------------
+    
+            gevonden_pbm = []
+            gevonden_pbm_pics = []
+    
+            # Gebruik bij voorkeur uitsluitend
+            # rubriek 8 om foutieve detecties uit
+            # andere rubrieken te voorkomen.
+            zoekgebied_pbm = rubriek_8
+    
+            if not zoekgebied_pbm:
+                print(
+                    "[MSDS ANALYSE\]: "
+                    "RUBRIEK 8 NIET GEVONDEN"
+                )
+    
+            else:
+                pbm_regels = [
+                    (
+                        [
+                            "veiligheidsbril",
+                            "oogbescherming",
+                            "ruimzichtbril",
+                            "gelaatsscherm",
+                            "face shield",
+                            "safety glasses",
+                            "goggles",
+                            "en 166",
+                            "en166",
+                        ],
+                        "oog- en gelaatsbescherming",
+                        "bril.png"
+                    ),
+                    (
+                        [
+                            "handschoen",
+                            "handschoenen",
+                            "nitril",
+                            "butylrubber",
+                            "neopreen",
+                            "chemical resistant gloves",
+                            "protective gloves",
+                            "en 374",
+                            "en374",
+                        ],
+                        "chemiebestendige handschoenen",
+                        "handschoenen.png"
+                    ),
+                    (
+                        [
+                            "ademhaling",
+                            "ademhalingsbescherming",
+                            "ademhalingstoestel",
+                            "respirator",
+                            "breathing apparatus",
+                            "filtermasker",
+                            "ffp2",
+                            "ffp3",
+                            "en 143",
+                            "en 149",
+                        ],
+                        "geschikte ademhalingsbescherming",
+                        "masker.png"
+                    ),
+                    (
+                        [
+                            "beschermende kleding",
+                            "chemical protective clothing",
+                            "chemical suit",
+                            "beschermend pak",
+                            "chemicaliënpak",
+                            "chemiepak",
+                            "schort",
+                            "apron",
+                            "overall",
+                            "en 13034",
+                            "en13034",
+                        ],
+                        "chemisch beschermende kleding",
+                        "schort.png"
+                    ),
+                    (
+                        [
+                            "veiligheidsschoenen",
+                            "veiligheidslaarzen",
+                            "beschermend schoeisel",
+                            "protective footwear",
+                            "safety shoes",
+                            "safety boots",
+                            "en 20345",
+                            "en20345",
+                            "en 13832",
+                        ],
+                        "geschikt veiligheidsschoeisel",
+                        "schoenen.png"
+                    ),
+                    (
+                        [
+                            "gehoorbescherming",
+                            "oordoppen",
+                            "oorkappen",
+                            "hearing protection",
+                            "earmuffs",
+                            "en 352",
+                            "en352",
+                        ],
+                        "gehoorbescherming",
+                        "gehoor.png"
+                    ),
+                    (
+                        [
+                            "veiligheidshelm",
+                            "hoofdbescherming",
+                            "head protection",
+                            "safety helmet",
+                            "en 397",
+                            "en397",
+                        ],
+                        "een veiligheidshelm",
+                        "helm.png"
+                    ),
+                ]
+    
+                for (
+                    zoektermen,
+                    omschrijving,
+                    pictogram
+                ) in pbm_regels:
+                    if any(
+                        term in zoekgebied_pbm
+                        for term in zoektermen
+                    ):
+                        self.voeg_uniek_toe(
+                            gevonden_pbm,
+                            omschrijving
+                        )
+    
+                        self.voeg_uniek_toe(
+                            gevonden_pbm_pics,
+                            pictogram
+                        )
+    
+            if gevonden_pbm:
+                pbm_tekst = (
+                    "Draag in ieder geval "
+                    + ", ".join(gevonden_pbm)
+                    + "."
+                )
+            else:
+                pbm_tekst = (
+                    "De vereiste persoonlijke "
+                    "beschermingsmiddelen konden niet "
+                    "betrouwbaar uit rubriek 8 worden "
+                    "herkend. Controleer de geldende "
+                    "PBM matrix, werkvergunning en "
+                    "werkinstructie."
+                )
+    
+            pbm_pics_string = ",".join(
+                gevonden_pbm_pics
+            )
+    
+            # -----------------------------------
+            # OOGSPOELINFORMATIE UIT RUBRIEK 4
+            # -----------------------------------
+    
+            oog_tekst = (
+                "Bij contact met de ogen direct "
+                "spoelen met overvloedig water en "
+                "de geldende noodprocedure volgen."
+            )
+    
+            if rubriek_4:
+                regels = [
+                    regel.strip()
+                    for regel in rubriek_4.splitlines()
+                    if regel.strip()
+                ]
+    
+                oog_regels = []
+    
+                oog_zoektermen = [
+                    "oog",
+                    "ogen",
+                    "eye contact",
+                    "eyes",
+                    "spoelen",
+                    "rinse",
+                    "flush",
+                ]
+    
+                for index, regel in enumerate(regels):
+                    if any(
+                        zoekterm in regel
+                        for zoekterm in oog_zoektermen
+                    ):
+                        self.voeg_uniek_toe(
+                            oog_regels,
+                            regel
+                        )
+    
+                        # Soms staat de instructie op
+                        # de opvolgende regel.
+                        if index + 1 < len(regels):
+                            volgende_regel = (
+                                regels[index + 1]
+                            )
+    
+                            if len(volgende_regel) > 15:
+                                self.voeg_uniek_toe(
+                                    oog_regels,
+                                    volgende_regel
+                                )
+    
+                if oog_regels:
+                    oog_tekst = " ".join(
+                        oog_regels[:3]
+                    ).strip()
+    
+            # -----------------------------------
+            # GEVARENTEXT UIT RUBRIEK 2
+            # -----------------------------------
+    
+            gevaren_tekst = (
+                "Zie het veiligheidsblad voor "
+                "de specifieke gevaren."
+            )
+    
+            if rubriek_2:
+                gevaar_regels = []
+    
+                for regel in rubriek_2.splitlines():
+                    regel = regel.strip()
+    
+                    if len(regel) < 15:
+                        continue
+    
+                    if (
+                        re.search(
+                            r"\bh[234]\d{2}\b",
+                            regel
+                        )
+                        or "veroorzaakt" in regel
+                        or "gevaar" in regel
+                        or "fatal" in regel
+                        or "toxic" in regel
+                        or "causes" in regel
+                    ):
+                        self.voeg_uniek_toe(
+                            gevaar_regels,
+                            regel
+                        )
+    
+                if gevaar_regels:
+                    gevaren_tekst = (
+                        "Belangrijkste gevaren: "
+                        + " ".join(
+                            gevaar_regels[:4]
+                        )
+                    )
+    
+            resultaat = {
+                "naam": stofnaam,
+    
+                # Een SDS bevat gewoonlijk niet
+                # afzonderlijk een PBM-set voor jullie
+                # lab en fabriek. Daarom krijgen beide
+                # voorlopig dezelfde SDS-informatie.
+                "pbm_lab": pbm_tekst,
+                "pbm_fabriek": pbm_tekst,
+    
+                "pbm_pic_lab": pbm_pics_string,
+                "pbm_pic_fabriek": pbm_pics_string,
+    
+                "pictogram": pictogrammen_string,
+                "n_ogen": oog_tekst,
+                "msds": Path(pdf_pad).name,
+                "gevaren": gevaren_tekst,
+                "pdf_geanalyseerd": True,
+            }
+    
+            print(
+                "[MSDS ANALYSE\]: KLAAR "
+                f"{stofnaam}"
+            )
+    
+            print(
+                "[MSDS PBM\]: "
+                f"{pbm_tekst}"
+            )
+    
+            print(
+                "[MSDS PBM PICTOGRAMMEN\]: "
+                f"{pbm_pics_string or 'GEEN'}"
+            )
+    
+            print(
+                "[MSDS GHS PICTOGRAMMEN\]: "
+                f"{pictogrammen_string or 'GEEN'}"
+            )
+    
+            return resultaat
+    
         except Exception as fout:
-            print(f"Fout bij uitlezen PDF {pdf_pad}: {fout}")
+            print(
+                "[MSDS ANALYSE FOUT\]: "
+                f"{type(fout).__name__}: {fout} "
+                f"BIJ {pdf_pad}"
+            )
+    
             return None
 
     def laad_stoffen(self):
+        """
+        Bouwt de database volledig op uit de PDF-bestanden
+        in de map msds. Er wordt geen CSV gebruikt.
+        """
+    
         database = {}
-        if not os.path.exists(MSDS_DIR): return database
-        for bestand in sorted(x for x in os.listdir(MSDS_DIR) if x.lower().endswith(".pdf")):
-            stofnaam = os.path.splitext(bestand)[0].strip()
-            sid = self.normaliseer_stofnaam(stofnaam)
-            if sid:
-                database[sid] = {"naam": stofnaam, "pbm_lab": "", "pbm_fabriek": "", "pbm_pic_lab": "",
-                                 "pbm_pic_fabriek": "", "pictogram": "", "n_ogen": "", "msds": bestand,
-                                 "gevaren": "", "pdf_geanalyseerd": False}
-                print(f"[PDF STOF GEREGISTREERD]: {sid} -> {bestand}")
-        print(f"[DATABASE]: {len(database)} stoffen geladen uit PDF-bestandsnamen")
+    
+        if not os.path.exists(MSDS_DIR):
+            print(
+                "[DATABASE FOUT\]: "
+                f"MSDS-map bestaat niet: {MSDS_DIR}"
+            )
+    
+            return database
+    
+        pdf_bestanden = sorted(
+            bestand
+            for bestand in os.listdir(MSDS_DIR)
+            if bestand.lower().endswith(".pdf")
+        )
+    
+        totaal = len(pdf_bestanden)
+    
+        print(
+            f"[MSDS ANALYSE]: {totaal} "
+            "PDF-BESTANDEN ANALYSEREN"
+        )
+    
+        for nummer, bestand in enumerate(
+            pdf_bestanden,
+            1
+        ):
+            pdf_pad = os.path.join(
+                MSDS_DIR,
+                bestand
+            )
+    
+            print(
+                f"[MSDS ANALYSE]: "
+                f"{nummer}/{totaal} {bestand}"
+            )
+    
+            pdf_data = self.analyseer_msds_pdf(
+                pdf_pad
+            )
+    
+            if not pdf_data:
+                print(
+                    "[MSDS ANALYSE]: "
+                    f"OVERSLAAN {bestand}"
+                )
+    
+                continue
+    
+            stof_id = self.normaliseer_stofnaam(
+                pdf_data["naam"]
+            )
+    
+            if not stof_id:
+                continue
+    
+            database[stof_id] = pdf_data
+    
+            print(
+                "[PDF STOF GEREGISTREERD]: "
+                f"{stof_id} -> {bestand}"
+            )
+    
+        print(
+            f"{len(database)} stoffen "
+            "volledig geanalyseerd uit PDF-bestanden"
+        )
+    
         return database
 
     def vind_beste_stof(self, opdracht):
