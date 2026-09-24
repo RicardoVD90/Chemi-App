@@ -72,10 +72,25 @@ class AndroidPdfRenderCache:
             File = autoclass("java.io.File")
             FileOutputStream = autoclass("java.io.FileOutputStream")
             ParcelFileDescriptor = autoclass("android.os.ParcelFileDescriptor")
-            PdfRenderer = autoclass("android.graphics.pdf.PdfRenderer")
-            Bitmap = autoclass("android.graphics.Bitmap")
-            BitmapConfig = autoclass("android.graphics.Bitmap$Config")
-            CompressFormat = autoclass("android.graphics.Bitmap$CompressFormat")
+            PdfRenderer = autoclass(
+                "android.graphics.pdf.PdfRenderer"
+            )
+            
+            PdfRendererPage = autoclass(
+                "android.graphics.pdf.PdfRenderer$Page"
+            )
+            
+            Bitmap = autoclass(
+                "android.graphics.Bitmap"
+            )
+            
+            BitmapConfig = autoclass(
+                "android.graphics.Bitmap$Config"
+            )
+            
+            CompressFormat = autoclass(
+                "android.graphics.Bitmap$CompressFormat"
+            )
 
             doelmap = self._map(pdf_pad)
             os.makedirs(doelmap, exist_ok=True)
@@ -106,7 +121,10 @@ class AndroidPdfRenderCache:
                         bitmap = Bitmap.createBitmap(breedte, hoogte, BitmapConfig.ARGB_8888)
                         bitmap.eraseColor(-1)
                         pagina.render(
-                            bitmap, None, None, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY
+                            bitmap,
+                            None,
+                            None,
+                            PdfRendererPage.RENDER_MODE_FOR_DISPLAY
                         )
                         png_pad = os.path.join(doelmap, f"page_{index + 1:03d}.png")
                         uitvoer = FileOutputStream(png_pad)
@@ -115,10 +133,21 @@ class AndroidPdfRenderCache:
                         self.log(f"[PDF RENDER]: PAGINA {index + 1}/{aantal} KLAAR")
                     finally:
                         if uitvoer is not None:
-                            uitvoer.close()
+                            try:
+                                uitvoer.close()
+                            except Exception:
+                                pass
+                    
                         if bitmap is not None:
-                            bitmap.recycle()
-                        pagina.close()
+                            try:
+                                bitmap.recycle()
+                            except Exception:
+                                pass
+                    
+                        try:
+                            pagina.close()
+                        except Exception:
+                            pass
 
                 stat = os.stat(pdf_pad)
                 with open(self._manifest(pdf_pad), "w", encoding="utf-8") as bestand:
