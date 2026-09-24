@@ -963,15 +963,15 @@ class ChemieApp(App):
             gevonden_gevaren_pics = []
     
             ghs_mapping = {
-                "ghs01": "explosief.png",
+                "ghs01": "Explosief.png",
                 "ghs02": "Brandbaar.png",
-                "ghs03": "oxiderend.png",
-                "ghs04": "gassen.png",
+                "ghs03": "Oxiderend.png",
+                "ghs04": "Gassen.png",
                 "ghs05": "Corrosief.png",
-                "ghs06": "giftig.png",
+                "ghs06": "Giftig.png",
                 "ghs07": "!.png",
-                "ghs08": "ongezond.png",
-                "ghs09": "milieu.png",
+                "ghs08": "Ongezond.png",
+                "ghs09": "Milieu.png",
             }
     
             zoekgebied_gevaren = (
@@ -1026,7 +1026,7 @@ class ChemieApp(App):
                             "en166",
                         ],
                         "oog- en gelaatsbescherming",
-                        "bril.png"
+                        "Bril.png"
                     ),
                     (
                         [
@@ -1041,7 +1041,7 @@ class ChemieApp(App):
                             "en374",
                         ],
                         "chemiebestendige handschoenen",
-                        "handschoenen.png"
+                        "Handschoenen.png"
                     ),
                     (
                         [
@@ -1057,7 +1057,7 @@ class ChemieApp(App):
                             "en 149",
                         ],
                         "geschikte ademhalingsbescherming",
-                        "masker.png"
+                        "Masker.png"
                     ),
                     (
                         [
@@ -1074,7 +1074,7 @@ class ChemieApp(App):
                             "en13034",
                         ],
                         "chemisch beschermende kleding",
-                        "schort.png"
+                        "Schort.png"
                     ),
                     (
                         [
@@ -1089,7 +1089,7 @@ class ChemieApp(App):
                             "en 13832",
                         ],
                         "geschikt veiligheidsschoeisel",
-                        "schoenen.png"
+                        "Schoenen.png"
                     ),
                     (
                         [
@@ -1102,7 +1102,7 @@ class ChemieApp(App):
                             "en352",
                         ],
                         "gehoorbescherming",
-                        "gehoor.png"
+                        "Gehoor.png"
                     ),
                     (
                         [
@@ -1114,7 +1114,7 @@ class ChemieApp(App):
                             "en397",
                         ],
                         "een veiligheidshelm",
-                        "helm.png"
+                        "Helm.png"
                     ),
                 ]
     
