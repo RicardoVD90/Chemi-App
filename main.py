@@ -957,16 +957,16 @@ class ChemieApp(App):
             )
     
             # -----------------------------------
-            # GEVARENPICTOGRAMMEN UIT RUBRIEK 2
+            # GEVARENPICTOGRAMMEN
             # -----------------------------------
-    
+            
             gevonden_gevaren_pics = []
-    
-            zoekgebied_gevaren = (
-                rubriek_2
-                if rubriek_2
-                else tekst_low
-            )
+            
+            # Niet alleen Rubriek 2 gebruiken.
+            # Sommige SDS'en noemen classificaties
+            # verderop in het document.
+            
+            zoekgebied_gevaren = tekst_low
             
             zoekgebied_gevaren = (
                 zoekgebied_gevaren
@@ -982,22 +982,26 @@ class ChemieApp(App):
             )
             
             if "ghs01" in zoekgebied_gevaren:
-                gevonden_gevaren_pics.append(
+                self.voeg_uniek_toe(
+                    gevonden_gevaren_pics,
                     "Explosief.png"
                 )
             
             if "ghs02" in zoekgebied_gevaren:
-                gevonden_gevaren_pics.append(
+                self.voeg_uniek_toe(
+                    gevonden_gevaren_pics,
                     "Brandbaar.png"
                 )
             
             if "ghs03" in zoekgebied_gevaren:
-                gevonden_gevaren_pics.append(
-                    "oxiderend.png"
+                self.voeg_uniek_toe(
+                    gevonden_gevaren_pics,
+                    "Oxiderend.png"
                 )
             
             if "ghs04" in zoekgebied_gevaren:
-                gevonden_gevaren_pics.append(
+                self.voeg_uniek_toe(
+                    gevonden_gevaren_pics,
                     "Gassen.png"
                 )
             
@@ -1007,17 +1011,20 @@ class ChemieApp(App):
                 or "eye dam" in zoekgebied_gevaren
                 or "corrosive" in zoekgebied_gevaren
             ):
-                gevonden_gevaren_pics.append(
+                self.voeg_uniek_toe(
+                    gevonden_gevaren_pics,
                     "Corrosief.png"
                 )
             
             if "ghs06" in zoekgebied_gevaren:
-                gevonden_gevaren_pics.append(
+                self.voeg_uniek_toe(
+                    gevonden_gevaren_pics,
                     "Giftig.png"
                 )
             
             if "ghs07" in zoekgebied_gevaren:
-                gevonden_gevaren_pics.append(
+                self.voeg_uniek_toe(
+                    gevonden_gevaren_pics,
                     "!.png"
                 )
             
@@ -1025,18 +1032,23 @@ class ChemieApp(App):
                 "ghs08" in zoekgebied_gevaren
                 or "stot se" in zoekgebied_gevaren
             ):
-                gevonden_gevaren_pics.append(
+                self.voeg_uniek_toe(
+                    gevonden_gevaren_pics,
                     "Ongezond.png"
                 )
             
             if "ghs09" in zoekgebied_gevaren:
-                gevonden_gevaren_pics.append(
+                self.voeg_uniek_toe(
+                    gevonden_gevaren_pics,
                     "Milieu.png"
                 )
             
             print(
-                "[GHS RESULTAAT]: "
-                f"{gevonden_gevaren_pics}"
+                f"[GHS RESULTAAT]: {gevonden_gevaren_pics}"
+            )
+            
+            pictogrammen_string = ",".join(
+                gevonden_gevaren_pics
             )
     
             pictogrammen_string = ",".join(
