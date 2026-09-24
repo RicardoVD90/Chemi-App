@@ -190,6 +190,12 @@ class ChemieApp(App):
         self.pdf_scroll_view = ScrollView(size_hint=(0.9, 0.80), pos_hint={"center_x": 0.5, "center_y": 0.58},
                                           do_scroll_x=False, do_scroll_y=True, opacity=0)
         self.pdf_scroll_view.bind(on_scroll_start=self.handmatige_scroll_detectie)
+        self.pdf_pagina_label = Label(
+            text="Pagina 1 / 17",
+            size_hint=(None, None),
+            size=(250, 50),
+            pos_hint={"right": 0.98, "top": 0.98}
+        )
         self.pdf_controls = BoxLayout(orientation="horizontal", size_hint=(None, None), size=(550, 110),
                                       pos_hint={"center_x": 0.52, "y": -0.2}, padding=10, spacing=20, opacity=0)
         self.btn_prev = Button(background_normal=self.asset_pad("vorige_knop.png"), size_hint=(None, None), size=(100, 100))
@@ -734,7 +740,11 @@ class ChemieApp(App):
             print(f"[PDF FOUT]: BESTAND NIET GEVONDEN: {pdf_pad}")
             return
 
-        self.update_ui("PDF LADEN...", KLEUR_KEUZE, "#FFFFFF")
+        self.update_ui(
+            "PDF LADEN...",
+            BG_STANDBY,
+            KLEUR_TEKST_DONKER
+        )
 
         def laden():
             paginas = self.pdf_renderer.pagina_paden(pdf_pad)
