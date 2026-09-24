@@ -962,32 +962,82 @@ class ChemieApp(App):
     
             gevonden_gevaren_pics = []
     
-            ghs_mapping = {
-                "ghs01": "Explosief.png",
-                "ghs02": "Brandbaar.png",
-                "ghs03": "Oxiderend.png",
-                "ghs04": "Gassen.png",
-                "ghs05": "Corrosief.png",
-                "ghs06": "Giftig.png",
-                "ghs07": "!.png",
-                "ghs08": "Ongezond.png",
-                "ghs09": "Milieu.png",
-            }
-    
             zoekgebied_gevaren = (
                 rubriek_2
                 if rubriek_2
                 else tekst_low
             )
-    
-            for ghs_code, bestandsnaam in (
-                ghs_mapping.items()
+            
+            zoekgebied_gevaren = (
+                zoekgebied_gevaren
+                .replace("ghs 01", "ghs01")
+                .replace("ghs 02", "ghs02")
+                .replace("ghs 03", "ghs03")
+                .replace("ghs 04", "ghs04")
+                .replace("ghs 05", "ghs05")
+                .replace("ghs 06", "ghs06")
+                .replace("ghs 07", "ghs07")
+                .replace("ghs 08", "ghs08")
+                .replace("ghs 09", "ghs09")
+            )
+            
+            if "ghs01" in zoekgebied_gevaren:
+                gevonden_gevaren_pics.append(
+                    "explosief.png"
+                )
+            
+            if "ghs02" in zoekgebied_gevaren:
+                gevonden_gevaren_pics.append(
+                    "Brandbaar.png"
+                )
+            
+            if "ghs03" in zoekgebied_gevaren:
+                gevonden_gevaren_pics.append(
+                    "oxiderend.png"
+                )
+            
+            if "ghs04" in zoekgebied_gevaren:
+                gevonden_gevaren_pics.append(
+                    "gassen.png"
+                )
+            
+            if (
+                "ghs05" in zoekgebied_gevaren
+                or "skin corr" in zoekgebied_gevaren
+                or "eye dam" in zoekgebied_gevaren
+                or "corrosive" in zoekgebied_gevaren
             ):
-                if ghs_code in zoekgebied_gevaren:
-                    self.voeg_uniek_toe(
-                        gevonden_gevaren_pics,
-                        bestandsnaam
-                    )
+                gevonden_gevaren_pics.append(
+                    "Corrosief.png"
+                )
+            
+            if "ghs06" in zoekgebied_gevaren:
+                gevonden_gevaren_pics.append(
+                    "giftig.png"
+                )
+            
+            if "ghs07" in zoekgebied_gevaren:
+                gevonden_gevaren_pics.append(
+                    "!.png"
+                )
+            
+            if (
+                "ghs08" in zoekgebied_gevaren
+                or "stot se" in zoekgebied_gevaren
+            ):
+                gevonden_gevaren_pics.append(
+                    "ongezond.png"
+                )
+            
+            if "ghs09" in zoekgebied_gevaren:
+                gevonden_gevaren_pics.append(
+                    "milieu.png"
+                )
+            
+            print(
+                "[GHS RESULTAAT]: "
+                f"{gevonden_gevaren_pics}"
+            )
     
             pictogrammen_string = ",".join(
                 gevonden_gevaren_pics
@@ -1074,7 +1124,7 @@ class ChemieApp(App):
                             "en13034",
                         ],
                         "chemisch beschermende kleding",
-                        "Schort.png"
+                        "Werkkleding.png"
                     ),
                     (
                         [
