@@ -291,52 +291,201 @@ class ChemieApp(App):
 
     def verwerk_android_spraak(self, gesproken_tekst):
         try:
-            tekst = str(gesproken_tekst).lower().strip()
-            print(f"[ANDROID GEHOORD]: {tekst}")
+            tekst = str(
+                gesproken_tekst
+            ).lower().strip()
+    
+            print(
+                f"[ANDROID GEHOORD]: {tekst}"
+            )
+    
             if not tekst:
                 return
-            if self.verwerk_pdf_spraakopdracht(tekst):
+    
+            if self.verwerk_pdf_spraakopdracht(
+                tekst
+            ):
                 return
+    
+            # ---------------------------------
+            # NOODPROCEDURE ACTIEF
+            # ---------------------------------
+    
             if self.nood_actief:
-                if any(x in tekst for x in ["stop noodprocedure", "stop alarm", "alarm stoppen"]):
+    
+                if any(
+                    x in tekst
+                    for x in [
+                        "stop noodprocedure",
+                        "stop alarm",
+                        "alarm stoppen"
+                    ]
+                ):
                     self.stop_noodprocedure()
+    
                 return
+    
+            # ---------------------------------
+            # LOCATIEKEUZE
+            # ---------------------------------
+    
             if self.wacht_op_locatie:
-                if "laboratorium" in tekst or tekst == "lab" or "het lab" in tekst:
+    
+                if (
+                    "laboratorium" in tekst
+                    or tekst == "lab"
+                    or "het lab" in tekst
+                ):
                     self.wacht_op_locatie = False
                     self.set_locatie("lab")
                     return
-                if "fabriek" in tekst or "productie" in tekst or "de hal" in tekst:
+    
+                if (
+                    "fabriek" in tekst
+                    or "productie" in tekst
+                    or "de hal" in tekst
+                ):
                     self.wacht_op_locatie = False
                     self.set_locatie("fabriek")
                     return
-            noodzinnen = ["noodgeval", "help", "in mijn ogen", "in de ogen", "vloeistof in ogen",
-                          "vloeistof in mijn ogen", "chemische stof in ogen", "chemische stof in mijn ogen",
-                          "ogen spoelen", "oog spoelen", "spoel mijn ogen", "brand in mijn ogen"]
-            if any(x in tekst for x in noodzinnen):
-                nu = time.time()
-                if nu - self.laatste_noodactie < 5:
-                    return
-                self.laatste_noodactie = nu
-                self.wacht_op_opdracht = False
-                self.verwerk_android_noodgeval(tekst)
-                return
+    
+            # ---------------------------------
+            # DIRECTE NOODSITUATIES
+            # ---------------------------------
+    
+            noodzinnen = [
+                "noodgeval",
+                "help",
+                "in ogen",
+                "in mijn ogen",
+                "in de ogen",
+                "oog",
+                "ogen",
+                "vloeistof in ogen",
+                "vloeistof in mijn ogen",
+                "chemische stof in ogen",
+                "chemische stof in mijn ogen",
+                "ogen spoelen",
+                "oog spoelen",
+                "spoel mijn ogen",
+                "brand in mijn ogen"
+            ]
+    
+            if any(
+                noodzin in tekst
+                for noodzin in noodzinnen
+            ):
+    
+                print(
+                    "[NOOD DETECTIE]: "
+                    f"{tekst}"
+                )
+    
+                stof_id = self.vind_beste_stof(
+                    tekst
+                )
+    
+                print(
+                    "[NOOD STOF]: "
+                    f"{stof_id}"
+                )
+    
+                if stof_id:
+    
+                    info = self.lab_database.get(
+                        stof_id
+                    )
+    
+                    if info:
+    
+                        huidige_tijd = time.time()
+    
+                        if (
+                            huidige_tijd
+                            - self.laatste_noodactie
+                            < 5
+                        ):
+                            return
+    
+                        self.laatste_noodactie = (
+                            huidige_tijd
+                        )
+    
+                        Clock.schedule_once(
+                            lambda dt:
+                            self.start_nood_timer(
+                                info,
+                                15
+                            )
+                        )
+    
+                        return
+    
+            # ---------------------------------
+            # VERVOLGOPDRACHT
+            # ---------------------------------
+    
             if self.wacht_op_opdracht:
+    
                 self.wacht_op_opdracht = False
-                self.verwerk_android_opdracht(tekst)
+    
+                self.verwerk_android_opdracht(
+                    tekst
+                )
+    
                 return
-            if "chemi" in tekst or "chemie" in tekst:
-                opdracht = tekst.replace("chemie", "", 1).replace("chemi", "", 1).strip(" ,.!?")
+    
+            # ---------------------------------
+            # WAKE WORD
+            # ---------------------------------
+    
+            if (
+                "chemi" in tekst
+                or "chemie" in tekst
+            ):
+    
+                opdracht = (
+                    tekst
+                    .replace("chemie", "", 1)
+                    .replace("chemi", "", 1)
+                    .strip(" ,.!?")
+                )
+    
                 if opdracht:
-                    self.verwerk_android_opdracht(opdracht)
+    
+                    self.verwerk_android_opdracht(
+                        opdracht
+                    )
+    
                     return
+    
                 self.wacht_op_opdracht = True
-                self.update_ui("WAT KAN IK VOOR U DOEN?", KLEUR_VRAAG, KLEUR_TEKST_DONKER)
-                self.speel_geluid(self.ping_sound)
-                self.assistent_spreekt("Wat kan ik voor u doen?")
-                Clock.schedule_once(self.reset_wachten_op_opdracht, 10)
+    
+                self.update_ui(
+                    "WAT KAN IK VOOR U DOEN?",
+                    KLEUR_VRAAG,
+                    KLEUR_TEKST_DONKER
+                )
+    
+                self.speel_geluid(
+                    self.ping_sound
+                )
+    
+                self.assistent_spreekt(
+                    "Wat kan ik voor u doen?"
+                )
+    
+                Clock.schedule_once(
+                    self.reset_wachten_op_opdracht,
+                    10
+                )
+    
         except Exception as fout:
-            print(f"[ANDROID FOUT VERWERK_SPRAAK]: {type(fout).__name__}: {fout}")
+    
+            print(
+                "[ANDROID FOUT VERWERK_SPRAAK]: "
+                f"{type(fout).__name__}: {fout}"
+            )
 
     def reset_wachten_op_opdracht(self, dt=None):
         if self.wacht_op_opdracht:
@@ -705,15 +854,85 @@ class ChemieApp(App):
             KLEUR_TEKST_DONKER
         )
 
-    def start_nood_timer(self, info, minuten=15):
-        self.nood_actief = self.systeem_bezet = True
-        self.timer_seconds = minuten * 60
-        self.update_ui(f"NOODGEVAL\n{minuten}:00", KLEUR_NOOD, "#FFFFFF", info.get("pictogram", ""))
-        self.progress.max = self.progress.value = self.timer_seconds
-        self.progress.opacity = 1
-        self.speel_geluid(self.alarm_sound, True)
-        if self.timer_event: self.timer_event.cancel()
-        self.timer_event = Clock.schedule_interval(lambda dt: self._timer_tick(info), 1)
+        def start_nood_timer(self, info, minuten=15):
+            self.nood_actief = True
+            self.systeem_bezet = True
+            self.timer_seconds = minuten * 60
+    
+            print(
+                "GESTART VOOR "
+                f"{info.get('naam', 'ONBEKENDE STOF')}"
+            )
+    
+            self.update_ui(
+                f"NOODGEVAL\n{minuten}:00",
+                KLEUR_NOOD,
+                "#FFFFFF",
+                info.get("pictogram", "")
+            )
+    
+            self.progress.max = self.timer_seconds
+            self.progress.value = self.timer_seconds
+            self.progress.opacity = 1
+    
+            self.btn_alarm_mute.disabled = False
+            self.btn_alarm_mute.text = "ALARM\nDEMPEN"
+    
+            self.btn_nood_stop.disabled = False
+            self.btn_nood_stop.text = "STOP NOODPROCEDURE"
+    
+            Animation(
+                pos_hint={
+                    "center_x": 0.3,
+                    "y": 0.05
+                },
+                opacity=1,
+                duration=0.5
+            ).start(
+                self.btn_alarm_mute
+            )
+    
+            Animation(
+                pos_hint={
+                    "center_x": 0.7,
+                    "y": 0.05
+                },
+                opacity=1,
+                duration=0.5
+            ).start(
+                self.btn_nood_stop
+            )
+    
+            self.speel_geluid(
+                self.alarm_sound,
+                True
+            )
+    
+            if self.timer_event:
+                self.timer_event.cancel()
+    
+            self.timer_event = Clock.schedule_interval(
+                lambda dt: self._timer_tick(info),
+                1
+            )
+    
+            ooginstructie = info.get(
+                "n_ogen",
+                ""
+            )
+    
+            if not ooginstructie:
+                ooginstructie = (
+                    "Begin onmiddellijk met het spoelen "
+                    "van de ogen en volg de geldende "
+                    "noodprocedure."
+                )
+    
+            threading.Thread(
+                target=self.assistent_spreekt,
+                args=(ooginstructie,),
+                daemon=True
+            ).start()
 
     def _timer_tick(self, info):
         if not self.nood_actief: return False
@@ -732,6 +951,27 @@ class ChemieApp(App):
             self.timer_event.cancel(); self.timer_event = None
         self.stop_geluid(self.alarm_sound)
         self.progress.opacity = 0
+        Animation(
+            pos_hint={
+                "center_x": 0.3,
+                "y": -0.2
+            },
+            opacity=0,
+            duration=0.5
+        ).start(
+            self.btn_alarm_mute
+        )
+        
+        Animation(
+            pos_hint={
+                "center_x": 0.7,
+                "y": -0.2
+            },
+            opacity=0,
+            duration=0.5
+        ).start(
+            self.btn_nood_stop
+        )
         self.update_ui("CHEMI", BG_STANDBY, KLEUR_TEKST_DONKER)
 
     def mute_alarm(self, instance):
