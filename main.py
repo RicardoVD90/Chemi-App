@@ -570,80 +570,80 @@ class ChemieApp(App):
     
         if locatie == "lab":
 
-        locatie_naam = "laboratorium"
+            locatie_naam = "laboratorium"
+        
+            pbm_tekst = info.get(
+                "pbm_lab",
+                ""
+            )
+        
+            pbm_pics = info.get(
+                "pbm_pic_lab",
+                ""
+            )
+        
+            basis_pbm_tekst = (
+                "Draag altijd een veiligheidsbril, "
+                "werkkleding en veiligheidsschoenen. "
+            )
+        
+            basis_pics = [
+                "Bril.png",
+                "Werkkleding.png",
+                "Schoenen.png"
+            ]
     
-        pbm_tekst = info.get(
-            "pbm_lab",
-            ""
-        )
+        else:
     
-        pbm_pics = info.get(
-            "pbm_pic_lab",
-            ""
-        )
+            locatie_naam = "fabriek"
+        
+            pbm_tekst = info.get(
+                "pbm_fabriek",
+                ""
+            )
+        
+            pbm_pics = info.get(
+                "pbm_pic_fabriek",
+                ""
+            )
+        
+            basis_pbm_tekst = (
+                "Draag altijd een veiligheidshelm, "
+                "veiligheidsbril, "
+                "werkkleding, "
+                "veiligheidsschoenen "
+                "en gehoorbescherming. "
+            )
+        
+            basis_pics = [
+                "Helm.png",
+                "Bril.png",
+                "Werkkleding.png",
+                "Schoenen.png",
+                "Gehoor.png"
+            ]
     
-        basis_pbm_tekst = (
-            "Draag altijd een veiligheidsbril, "
-            "werkkleding en veiligheidsschoenen. "
-        )
-    
-        basis_pics = [
-            "Bril.png",
-            "Werkkleding.png",
-            "Schoenen.png"
+        extra_pics = [
+            x.strip()
+            for x in pbm_pics.split(",")
+            if x.strip()
         ]
-    
-    else:
-    
-        locatie_naam = "fabriek"
-    
-        pbm_tekst = info.get(
-            "pbm_fabriek",
-            ""
+        
+        alle_pics = []
+        
+        for pic in basis_pics + extra_pics:
+        
+            if pic not in alle_pics:
+                alle_pics.append(pic)
+        
+        pbm_pics = ",".join(
+            alle_pics
         )
-    
-        pbm_pics = info.get(
-            "pbm_pic_fabriek",
-            ""
+        
+        pbm_tekst = (
+            basis_pbm_tekst
+            + pbm_tekst
         )
-    
-        basis_pbm_tekst = (
-            "Draag altijd een veiligheidshelm, "
-            "veiligheidsbril, "
-            "werkkleding, "
-            "veiligheidsschoenen "
-            "en gehoorbescherming. "
-        )
-    
-        basis_pics = [
-            "Helm.png",
-            "Bril.png",
-            "Werkkleding.png",
-            "Schoenen.png",
-            "Gehoor.png"
-        ]
-    
-    extra_pics = [
-        x.strip()
-        for x in pbm_pics.split(",")
-        if x.strip()
-    ]
-    
-    alle_pics = []
-    
-    for pic in basis_pics + extra_pics:
-    
-        if pic not in alle_pics:
-            alle_pics.append(pic)
-    
-    pbm_pics = ",".join(
-        alle_pics
-    )
-    
-    pbm_tekst = (
-        basis_pbm_tekst
-        + pbm_tekst
-    )
     
         if not pbm_tekst:
             pbm_tekst = (
@@ -1098,10 +1098,6 @@ class ChemieApp(App):
                 f"[GHS RESULTAAT]: {gevonden_gevaren_pics}"
             )
             
-            pictogrammen_string = ",".join(
-                gevonden_gevaren_pics
-            )
-    
             pictogrammen_string = ",".join(
                 gevonden_gevaren_pics
             )
