@@ -569,30 +569,81 @@ class ChemieApp(App):
         )
     
         if locatie == "lab":
-            locatie_naam = "laboratorium"
+
+        locatie_naam = "laboratorium"
     
-            pbm_tekst = info.get(
-                "pbm_lab",
-                ""
-            )
+        pbm_tekst = info.get(
+            "pbm_lab",
+            ""
+        )
     
-            pbm_pics = info.get(
-                "pbm_pic_lab",
-                ""
-            )
+        pbm_pics = info.get(
+            "pbm_pic_lab",
+            ""
+        )
     
-        else:
-            locatie_naam = "fabriek"
+        basis_pbm_tekst = (
+            "Draag altijd een veiligheidsbril, "
+            "werkkleding en veiligheidsschoenen. "
+        )
     
-            pbm_tekst = info.get(
-                "pbm_fabriek",
-                ""
-            )
+        basis_pics = [
+            "Bril.png",
+            "Werkkleding.png",
+            "Schoenen.png"
+        ]
     
-            pbm_pics = info.get(
-                "pbm_pic_fabriek",
-                ""
-            )
+    else:
+    
+        locatie_naam = "fabriek"
+    
+        pbm_tekst = info.get(
+            "pbm_fabriek",
+            ""
+        )
+    
+        pbm_pics = info.get(
+            "pbm_pic_fabriek",
+            ""
+        )
+    
+        basis_pbm_tekst = (
+            "Draag altijd een veiligheidshelm, "
+            "veiligheidsbril, "
+            "werkkleding, "
+            "veiligheidsschoenen "
+            "en gehoorbescherming. "
+        )
+    
+        basis_pics = [
+            "Helm.png",
+            "Bril.png",
+            "Werkkleding.png",
+            "Schoenen.png",
+            "Gehoor.png"
+        ]
+    
+    extra_pics = [
+        x.strip()
+        for x in pbm_pics.split(",")
+        if x.strip()
+    ]
+    
+    alle_pics = []
+    
+    for pic in basis_pics + extra_pics:
+    
+        if pic not in alle_pics:
+            alle_pics.append(pic)
+    
+    pbm_pics = ",".join(
+        alle_pics
+    )
+    
+    pbm_tekst = (
+        basis_pbm_tekst
+        + pbm_tekst
+    )
     
         if not pbm_tekst:
             pbm_tekst = (
