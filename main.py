@@ -884,7 +884,7 @@ class ChemieApp(App):
         Animation(
             pos_hint={
                 "center_x": 0.3,
-                "y": 0.1
+                "y": 0.01
             },
             opacity=1,
             duration=0.15
@@ -895,7 +895,7 @@ class ChemieApp(App):
         Animation(
             pos_hint={
                 "center_x": 1.0,
-                "y": 0.25
+                "y": 0.01
             },
             opacity=1,
             duration=0.5
