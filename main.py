@@ -1347,143 +1347,175 @@ class ChemieApp(App):
     
             gevonden_pbm = []
             gevonden_pbm_pics = []
-
+            
+            # Eerst Rubriek 8 proberen.
             zoekgebied_pbm = rubriek_8
             
+            # Als Rubriek 8 ontbreekt, de volledige PDF gebruiken.
             if not zoekgebied_pbm:
-            
                 print(
-                    "[PBM FALLBACK\]: "
+                    "[PBM FALLBACK]: "
                     "VOLLEDIGE PDF GEBRUIKEN"
                 )
             
                 zoekgebied_pbm = tekst_low
-    
             else:
-                pbm_regels = [
-                    (
-                        [
-                            "veiligheidsbril",
-                            "oogbescherming",
-                            "ruimzichtbril",
-                            "gelaatsscherm",
-                            "face shield",
-                            "safety glasses",
-                            "goggles",
-                            "en 166",
-                            "en166",
-                        ],
-                        "oog- en gelaatsbescherming",
-                        "Bril.png"
-                    ),
-                    (
-                        [
-                            "handschoen",
-                            "handschoenen",
-                            "nitril",
-                            "butylrubber",
-                            "neopreen",
-                            "chemical resistant gloves",
-                            "protective gloves",
-                            "en 374",
-                            "en374",
-                        ],
-                        "chemiebestendige handschoenen",
-                        "Handschoenen.png"
-                    ),
-                    (
-                        [
-                            "ademhaling",
-                            "ademhalingsbescherming",
-                            "ademhalingstoestel",
-                            "respirator",
-                            "breathing apparatus",
-                            "filtermasker",
-                            "ffp2",
-                            "ffp3",
-                            "en 143",
-                            "en 149",
-                        ],
-                        "geschikte ademhalingsbescherming",
-                        "Masker.png"
-                    ),
-                    (
-                        [
-                            "beschermende kleding",
-                            "chemical protective clothing",
-                            "chemical suit",
-                            "beschermend pak",
-                            "chemicaliënpak",
-                            "chemiepak",
-                            "schort",
-                            "apron",
-                            "overall",
-                            "en 13034",
-                            "en13034",
-                        ],
-                        "chemisch beschermende kleding",
-                        "Werkkleding.png"
-                    ),
-                    (
-                        [
-                            "veiligheidsschoenen",
-                            "veiligheidslaarzen",
-                            "beschermend schoeisel",
-                            "protective footwear",
-                            "safety shoes",
-                            "safety boots",
-                            "en 20345",
-                            "en20345",
-                            "en 13832",
-                        ],
-                        "geschikt veiligheidsschoeisel",
-                        "Schoenen.png"
-                    ),
-                    (
-                        [
-                            "gehoorbescherming",
-                            "oordoppen",
-                            "oorkappen",
-                            "hearing protection",
-                            "earmuffs",
-                            "en 352",
-                            "en352",
-                        ],
+                print(
+                    "[PBM ANALYSE]: "
+                    "RUBRIEK 8 GEBRUIKEN"
+                )
+            
+            # BELANGRIJK:
+            # pbm_regels moet buiten de if/else staan.
+            pbm_regels = [
+                (
+                    [
+                        "veiligheidsbril",
+                        "veiligheidsbrillen",
+                        "oogbescherming",
+                        "ruimzichtbril",
+                        "gelaatsscherm",
+                        "face shield",
+                        "safety glasses",
+                        "safety spectacles",
+                        "protective eyewear",
+                        "eye protection",
+                        "goggles",
+                        "en 166",
+                        "en166",
+                    ],
+                    "oog- en gelaatsbescherming",
+                    "Bril.png"
+                ),
+                (
+                    [
+                        "handschoen",
+                        "handschoenen",
+                        "gloves",
+                        "wear gloves",
+                        "suitable gloves",
+                        "nitril",
+                        "nitrile",
+                        "butylrubber",
+                        "neopreen",
+                        "neoprene",
+                        "chemical resistant gloves",
+                        "protective gloves",
+                        "en 374",
+                        "en374",
+                    ],
+                    "chemiebestendige handschoenen",
+                    "Handschoenen.png"
+                ),
+                (
+                    [
+                        "ademhaling",
+                        "ademhalingsbescherming",
+                        "ademhalingstoestel",
+                        "respirator",
+                        "respiratory protection",
+                        "breathing apparatus",
+                        "filtermasker",
+                        "ffp2",
+                        "ffp3",
+                        "en 143",
+                        "en 149",
+                    ],
+                    "geschikte ademhalingsbescherming",
+                    "Masker.png"
+                ),
+                (
+                    [
+                        "beschermende kleding",
+                        "protective clothing",
+                        "chemical protective clothing",
+                        "chemical suit",
+                        "work clothing",
+                        "body protection",
+                        "werkkleding",
+                        "beschermend pak",
+                        "chemicaliënpak",
+                        "chemiepak",
+                        "schort",
+                        "apron",
+                        "overall",
+                        "en 13034",
+                        "en13034",
+                    ],
+                    "chemisch beschermende kleding",
+                    "Werkkleding.png"
+                ),
+                (
+                    [
+                        "veiligheidsschoenen",
+                        "veiligheidslaarzen",
+                        "beschermend schoeisel",
+                        "veilig schoeisel",
+                        "protective footwear",
+                        "safety footwear",
+                        "safety shoes",
+                        "safety boots",
+                        "en 20345",
+                        "en20345",
+                        "en 13832",
+                    ],
+                    "geschikt veiligheidsschoeisel",
+                    "Schoenen.png"
+                ),
+                (
+                    [
                         "gehoorbescherming",
-                        "Gehoor.png"
-                    ),
+                        "oordoppen",
+                        "oorkappen",
+                        "hearing protection",
+                        "earmuffs",
+                        "ear plugs",
+                        "en 352",
+                        "en352",
+                    ],
+                    "gehoorbescherming",
+                    "Gehoor.png"
+                ),
+                (
+                    [
+                        "veiligheidshelm",
+                        "hoofdbescherming",
+                        "head protection",
+                        "safety helmet",
+                        "protective helmet",
+                        "en 397",
+                        "en397",
+                    ],
+                    "een veiligheidshelm",
+                    "Helm.png"
+                ),
+            ]
+            
+            for zoektermen, omschrijving, pictogram in pbm_regels:
+                gevonden_term = next(
                     (
-                        [
-                            "veiligheidshelm",
-                            "hoofdbescherming",
-                            "head protection",
-                            "safety helmet",
-                            "en 397",
-                            "en397",
-                        ],
-                        "een veiligheidshelm",
-                        "Helm.png"
-                    ),
-                ]
-    
-                for (
-                    zoektermen,
-                    omschrijving,
-                    pictogram
-                ) in pbm_regels:
-                    if any(
-                        term in zoekgebied_pbm
+                        term
                         for term in zoektermen
-                    ):
-                        self.voeg_uniek_toe(
-                            gevonden_pbm,
-                            omschrijving
-                        )
-    
-                        self.voeg_uniek_toe(
-                            gevonden_pbm_pics,
-                            pictogram
-                        )
+                        if term in zoekgebied_pbm
+                    ),
+                    None
+                )
+            
+                if gevonden_term:
+                    print(
+                        "[PBM MATCH]: "
+                        f"{gevonden_term} -> {pictogram}"
+                    )
+            
+                    self.voeg_uniek_toe(
+                        gevonden_pbm,
+                        omschrijving
+                    )
+            
+                    self.voeg_uniek_toe(
+                        gevonden_pbm_pics,
+                        pictogram
+                    )
     
             if gevonden_pbm:
                 pbm_tekst = (
