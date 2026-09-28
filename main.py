@@ -1347,17 +1347,17 @@ class ChemieApp(App):
     
             gevonden_pbm = []
             gevonden_pbm_pics = []
-    
-            # Gebruik bij voorkeur uitsluitend
-            # rubriek 8 om foutieve detecties uit
-            # andere rubrieken te voorkomen.
-            zoekgebied_pbm = tekst_low
-    
+
+            zoekgebied_pbm = rubriek_8
+            
             if not zoekgebied_pbm:
+            
                 print(
-                    "[MSDS ANALYSE\]: "
-                    "RUBRIEK 8 NIET GEVONDEN"
+                    "[PBM FALLBACK\]: "
+                    "VOLLEDIGE PDF GEBRUIKEN"
                 )
+            
+                zoekgebied_pbm = tekst_low
     
             else:
                 pbm_regels = [
