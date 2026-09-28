@@ -854,85 +854,85 @@ class ChemieApp(App):
             KLEUR_TEKST_DONKER
         )
 
-        def start_nood_timer(self, info, minuten=15):
-            self.nood_actief = True
-            self.systeem_bezet = True
-            self.timer_seconds = minuten * 60
-    
-            print(
-                "GESTART VOOR "
-                f"{info.get('naam', 'ONBEKENDE STOF')}"
+    def start_nood_timer(self, info, minuten=15):
+        self.nood_actief = True
+        self.systeem_bezet = True
+        self.timer_seconds = minuten * 60
+
+        print(
+            "GESTART VOOR "
+            f"{info.get('naam', 'ONBEKENDE STOF')}"
+        )
+
+        self.update_ui(
+            f"NOODGEVAL\n{minuten}:00",
+            KLEUR_NOOD,
+            "#FFFFFF",
+            info.get("pictogram", "")
+        )
+
+        self.progress.max = self.timer_seconds
+        self.progress.value = self.timer_seconds
+        self.progress.opacity = 1
+
+        self.btn_alarm_mute.disabled = False
+        self.btn_alarm_mute.text = "ALARM\nDEMPEN"
+
+        self.btn_nood_stop.disabled = False
+        self.btn_nood_stop.text = "STOP NOODPROCEDURE"
+
+        Animation(
+            pos_hint={
+                "center_x": 0.3,
+                "y": 0.05
+            },
+            opacity=1,
+            duration=0.5
+        ).start(
+            self.btn_alarm_mute
+        )
+
+        Animation(
+            pos_hint={
+                "center_x": 0.7,
+                "y": 0.05
+            },
+            opacity=1,
+            duration=0.5
+        ).start(
+            self.btn_nood_stop
+        )
+
+        self.speel_geluid(
+            self.alarm_sound,
+            True
+        )
+
+        if self.timer_event:
+            self.timer_event.cancel()
+
+        self.timer_event = Clock.schedule_interval(
+            lambda dt: self._timer_tick(info),
+            1
+        )
+
+        ooginstructie = info.get(
+            "n_ogen",
+            ""
+        )
+
+        if not ooginstructie:
+            ooginstructie = (
+                "Begin onmiddellijk met het spoelen "
+                "van de ogen en volg de geldende "
+                "noodprocedure."
             )
-    
-            self.update_ui(
-                f"NOODGEVAL\n{minuten}:00",
-                KLEUR_NOOD,
-                "#FFFFFF",
-                info.get("pictogram", "")
-            )
-    
-            self.progress.max = self.timer_seconds
-            self.progress.value = self.timer_seconds
-            self.progress.opacity = 1
-    
-            self.btn_alarm_mute.disabled = False
-            self.btn_alarm_mute.text = "ALARM\nDEMPEN"
-    
-            self.btn_nood_stop.disabled = False
-            self.btn_nood_stop.text = "STOP NOODPROCEDURE"
-    
-            Animation(
-                pos_hint={
-                    "center_x": 0.3,
-                    "y": 0.05
-                },
-                opacity=1,
-                duration=0.5
-            ).start(
-                self.btn_alarm_mute
-            )
-    
-            Animation(
-                pos_hint={
-                    "center_x": 0.7,
-                    "y": 0.05
-                },
-                opacity=1,
-                duration=0.5
-            ).start(
-                self.btn_nood_stop
-            )
-    
-            self.speel_geluid(
-                self.alarm_sound,
-                True
-            )
-    
-            if self.timer_event:
-                self.timer_event.cancel()
-    
-            self.timer_event = Clock.schedule_interval(
-                lambda dt: self._timer_tick(info),
-                1
-            )
-    
-            ooginstructie = info.get(
-                "n_ogen",
-                ""
-            )
-    
-            if not ooginstructie:
-                ooginstructie = (
-                    "Begin onmiddellijk met het spoelen "
-                    "van de ogen en volg de geldende "
-                    "noodprocedure."
-                )
-    
-            threading.Thread(
-                target=self.assistent_spreekt,
-                args=(ooginstructie,),
-                daemon=True
-            ).start()
+
+        threading.Thread(
+            target=self.assistent_spreekt,
+            args=(ooginstructie,),
+            daemon=True
+        ).start()
 
     def _timer_tick(self, info):
         if not self.nood_actief: return False
