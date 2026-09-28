@@ -1351,7 +1351,7 @@ class ChemieApp(App):
             # Gebruik bij voorkeur uitsluitend
             # rubriek 8 om foutieve detecties uit
             # andere rubrieken te voorkomen.
-            zoekgebied_pbm = rubriek_8
+            zoekgebied_pbm = tekst_low
     
             if not zoekgebied_pbm:
                 print(
