@@ -884,18 +884,18 @@ class ChemieApp(App):
         Animation(
             pos_hint={
                 "center_x": 0.3,
-                "y": 0.05
+                "y": 0.1
             },
             opacity=1,
-            duration=0.1
+            duration=0.15
         ).start(
             self.btn_alarm_mute
         )
 
         Animation(
             pos_hint={
-                "center_x": 0.7,
-                "y": 0.01
+                "center_x": 1.0,
+                "y": 0.25
             },
             opacity=1,
             duration=0.5
