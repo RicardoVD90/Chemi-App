@@ -511,7 +511,7 @@ class ChemieApp(App):
             Clock.schedule_once(lambda dt: self.update_ui("CHEMI", BG_STANDBY, KLEUR_TEKST_DONKER), 3)
             return
         info = self.lab_database[stof_id]
-        if any(w in tekst for w in ["oog", "ogen", "spoelen", "nood", "help"]):
+        if any(w in tekst for w in ["ogen", "spoelen", "nood", "help"]):
             self.start_nood_timer(info, 15)
         elif any(w in tekst for w in ["gevaar", "gevaren", "risico", "gevaarlijk"]):
             threading.Thread(target=self.lees_gevaren_voor, args=(info,), daemon=True).start()
