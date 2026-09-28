@@ -359,7 +359,6 @@ class ChemieApp(App):
                 "in ogen",
                 "in mijn ogen",
                 "in de ogen",
-                "oog",
                 "ogen",
                 "vloeistof in ogen",
                 "vloeistof in mijn ogen",
