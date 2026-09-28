@@ -893,7 +893,7 @@ class ChemieApp(App):
 
         Animation(
             pos_hint={
-                "center_x": 1.0,
+                "center_x": 0.7,
                 "y": 0.01
             },
             opacity=1,
