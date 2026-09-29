@@ -294,43 +294,61 @@ class ChemieApp(App):
             tekst = str(
                 gesproken_tekst
             ).lower().strip()
-    
+
             print(
                 f"[ANDROID GEHOORD]: {tekst}"
             )
-    
+
             if not tekst:
                 return
-    
-            if self.verwerk_pdf_spraakopdracht(
-                tekst
-            ):
+
+            # PDF-bediening wanneer er al een PDF openstaat.
+            if self.verwerk_pdf_spraakopdracht(tekst):
                 return
-    
+
             # ---------------------------------
-            # NOODPROCEDURE ACTIEF
+            # ACTIEVE NOODPROCEDURE
             # ---------------------------------
-    
+
             if self.nood_actief:
-    
                 if any(
-                    x in tekst
-                    for x in [
+                    opdracht in tekst
+                    for opdracht in [
                         "stop noodprocedure",
-                        "stop alarm",
-                        "alarm stoppen"
+                        "beëindig noodprocedure",
+                        "noodprocedure stoppen",
                     ]
                 ):
                     self.stop_noodprocedure()
-    
+                    return
+
+                # Alleen het geluid dempen.
+                if any(
+                    opdracht in tekst
+                    for opdracht in [
+                        "demp alarm",
+                        "alarm dempen",
+                        "alarm uit",
+                    ]
+                ):
+                    self.stop_geluid(
+                        self.alarm_sound
+                    )
+
+                    self.btn_alarm_mute.text = (
+                        "ALARM UITGEZET"
+                    )
+
+                    self.btn_alarm_mute.disabled = True
+                    return
+
                 return
-    
+
             # ---------------------------------
             # LOCATIEKEUZE
             # ---------------------------------
-    
+
             if self.wacht_op_locatie:
-    
                 if (
                     "laboratorium" in tekst
                     or tekst == "lab"
@@ -339,7 +357,7 @@ class ChemieApp(App):
                     self.wacht_op_locatie = False
                     self.set_locatie("lab")
                     return
-    
+
                 if (
                     "fabriek" in tekst
                     or "productie" in tekst
@@ -348,139 +366,310 @@ class ChemieApp(App):
                     self.wacht_op_locatie = False
                     self.set_locatie("fabriek")
                     return
-    
+
             # ---------------------------------
-            # DIRECTE NOODSITUATIES
+            # DOCUMENTOPDRACHT HEEFT VOORRANG
             # ---------------------------------
-    
-            noodzinnen = [
-                "noodgeval",
-                "help",
+
+            documentwoorden = [
+                "pdf",
+                "df ",
+                "msds",
+                "veiligheidsblad",
+                "veiligheidsinformatieblad",
+                "document",
+            ]
+
+            if any(
+                woord in tekst
+                for woord in documentwoorden
+            ):
+                # Android verstaat "pdf" soms als "df".
+                if tekst.startswith("df "):
+                    tekst = "pdf " + tekst[3:]
+
+                print(
+                    f"{tekst}"
+                )
+
+                self.wacht_op_opdracht = False
+                self.verwerk_android_opdracht(tekst)
+                return
+
+            # ---------------------------------
+            # OGEN
+            # Geen losse woorden "oog" of
+            # "ogen", vanwege valse matches.
+            # ---------------------------------
+
+            nood_ogen = [
                 "in ogen",
                 "in mijn ogen",
                 "in de ogen",
-                "ogen",
+                "oog geraakt",
+                "ogen geraakt",
                 "vloeistof in ogen",
                 "vloeistof in mijn ogen",
                 "chemische stof in ogen",
                 "chemische stof in mijn ogen",
+                "zuur in ogen",
+                "zuur in mijn ogen",
+                "loog in ogen",
+                "loog in mijn ogen",
                 "ogen spoelen",
                 "oog spoelen",
                 "spoel mijn ogen",
-                "brand in mijn ogen"
+                "brand in mijn ogen",
             ]
-    
+
+            # ---------------------------------
+            # HUID
+            # ---------------------------------
+
+            nood_huid = [
+                "op huid",
+                "op mijn huid",
+                "huidcontact",
+                "contact met huid",
+                "contact met de huid",
+                "vloeistof op huid",
+                "vloeistof op mijn huid",
+                "chemische stof op huid",
+                "chemische stof op mijn huid",
+                "op arm",
+                "op mijn arm",
+                "op armen",
+                "op hand",
+                "op mijn hand",
+                "op handen",
+                "op mijn handen",
+                "op been",
+                "op mijn been",
+                "op benen",
+                "op kleding",
+                "op mijn kleding",
+                "brand op huid",
+                "chemische brandwond",
+            ]
+
+            # ---------------------------------
+            # INADEMING
+            # ---------------------------------
+
+            nood_inademing = [
+                "ingeademd",
+                "ingeademt",
+                "damp ingeademd",
+                "dampen ingeademd",
+                "gas ingeademd",
+                "gassen ingeademd",
+                "rook ingeademd",
+                "giftig gas ingeademd",
+                "giftige damp ingeademd",
+                "dampen binnengekregen",
+                "gas binnengekregen",
+                "moeilijk ademen",
+                "kan niet ademen",
+                "ademhalingsproblemen",
+                "kortademig",
+                "benauwd",
+            ]
+
+            # ---------------------------------
+            # INSLIKKEN
+            # ---------------------------------
+
+            nood_inslikken = [
+                "ingeslikt",
+                "ingeslikken",
+                "doorgeslikt",
+                "opgedronken",
+                "ingenomen",
+                "in mond gekregen",
+                "in mijn mond gekregen",
+                "in de mond gekregen",
+                "oraal contact",
+                "stof ingeslikt",
+                "chemische stof ingeslikt",
+                "vloeistof ingeslikt",
+                "stof opgedronken",
+                "vloeistof opgedronken",
+            ]
+
+            # ---------------------------------
+            # ALGEMENE NOODWOORDEN
+            # ---------------------------------
+
+            nood_algemeen = [
+                "chemisch noodgeval",
+                "chemisch ongeval",
+                "noodgeval met",
+                "eerste hulp voor",
+            ]
+
+            # Bepaal het type blootstelling.
+            blootstelling = None
+
             if any(
-                noodzin in tekst
-                for noodzin in noodzinnen
+                zin in tekst
+                for zin in nood_ogen
             ):
-    
+                blootstelling = "ogen"
+
+            elif any(
+                zin in tekst
+                for zin in nood_huid
+            ):
+                blootstelling = "huid"
+
+            elif any(
+                zin in tekst
+                for zin in nood_inademing
+            ):
+                blootstelling = "inademing"
+
+            elif any(
+                zin in tekst
+                for zin in nood_inslikken
+            ):
+                blootstelling = "inslikken"
+
+            elif any(
+                zin in tekst
+                for zin in nood_algemeen
+            ):
+                blootstelling = "algemeen"
+
+            # ---------------------------------
+            # NOODPROCEDURE STARTEN
+            # ---------------------------------
+
+            if blootstelling:
                 print(
                     "[NOOD DETECTIE]: "
                     f"{tekst}"
                 )
-    
+
+                print(
+                    "[NOOD BLOOTSTELLING]: "
+                    f"{blootstelling}"
+                )
+
                 stof_id = self.vind_beste_stof(
                     tekst
                 )
-    
+
                 print(
                     "[NOOD STOF]: "
                     f"{stof_id}"
                 )
-    
-                if stof_id:
-    
-                    info = self.lab_database.get(
-                        stof_id
+
+                if not stof_id:
+                    print(
+                        "[NOOD WAARSCHUWING]: "
+                        "GEEN STOF HERKEND"
                     )
-    
-                    if info:
-    
-                        huidige_tijd = time.time()
-    
-                        if (
-                            huidige_tijd
-                            - self.laatste_noodactie
-                            < 5
-                        ):
-                            return
-    
-                        self.laatste_noodactie = (
-                            huidige_tijd
-                        )
-    
-                        Clock.schedule_once(
-                            lambda dt:
-                            self.start_nood_timer(
-                                info,
-                                15
-                            )
-                        )
-    
-                        return
-    
-            # ---------------------------------
-            # VERVOLGOPDRACHT
-            # ---------------------------------
-    
-            if self.wacht_op_opdracht:
-    
+
+                    return
+
+                info = self.lab_database.get(
+                    stof_id
+                )
+
+                if not info:
+                    print(
+                        "[NOOD WAARSCHUWING]: "
+                        "GEEN STOFINFORMATIE GEVONDEN"
+                    )
+
+                    return
+
+                huidige_tijd = time.time()
+
+                if (
+                    huidige_tijd
+                    - self.laatste_noodactie
+                    < 5
+                ):
+                    return
+
+                self.laatste_noodactie = huidige_tijd
                 self.wacht_op_opdracht = False
-    
+
+                self.log_noodgeval(
+                    info.get(
+                        "naam",
+                        "ONBEKENDE STOF"
+                    )
+                )
+
+                Clock.schedule_once(
+                    lambda dt: self.start_nood_timer(
+                        info,
+                        15,
+                        blootstelling
+                    )
+                )
+
+                return
+
+            # ---------------------------------
+            # VERVOLGOPDRACHT NA "CHEMI"
+            # ---------------------------------
+
+            if self.wacht_op_opdracht:
+                self.wacht_op_opdracht = False
+
                 self.verwerk_android_opdracht(
                     tekst
                 )
-    
+
                 return
-    
+
             # ---------------------------------
             # WAKE WORD
             # ---------------------------------
-    
+
             if (
                 "chemi" in tekst
                 or "chemie" in tekst
             ):
-    
                 opdracht = (
                     tekst
                     .replace("chemie", "", 1)
                     .replace("chemi", "", 1)
                     .strip(" ,.!?")
                 )
-    
+
                 if opdracht:
-    
                     self.verwerk_android_opdracht(
                         opdracht
                     )
-    
+
                     return
-    
+
                 self.wacht_op_opdracht = True
-    
+
                 self.update_ui(
                     "WAT KAN IK VOOR U DOEN?",
                     KLEUR_VRAAG,
                     KLEUR_TEKST_DONKER
                 )
-    
+
                 self.speel_geluid(
                     self.ping_sound
                 )
-    
+
                 self.assistent_spreekt(
                     "Wat kan ik voor u doen?"
                 )
-    
+
                 Clock.schedule_once(
                     self.reset_wachten_op_opdracht,
                     10
                 )
-    
+
         except Exception as fout:
-    
             print(
                 "[ANDROID FOUT VERWERK_SPRAAK]: "
                 f"{type(fout).__name__}: {fout}"
@@ -492,15 +681,46 @@ class ChemieApp(App):
             if not self.nood_actief:
                 self.update_ui("CHEMI", BG_STANDBY, KLEUR_TEKST_DONKER)
 
-    def verwerk_android_noodgeval(self, tekst):
-        stof_id = self.vind_beste_stof(tekst)
-        info = self.lab_database.get(stof_id) if stof_id else None
+    def verwerk_android_noodgeval(
+        self,
+        tekst,
+        blootstelling="algemeen"
+    ):
+        stof_id = self.vind_beste_stof(
+            tekst
+        )
+
+        info = (
+            self.lab_database.get(stof_id)
+            if stof_id
+            else None
+        )
+
         if not info:
-            info = {"naam": "ONBEKENDE STOF", "pictogram": "", "n_ogen": "Begin direct met spoelen.",
-                    "pbm_lab": "", "pbm_fabriek": "", "pbm_pic_lab": "", "pbm_pic_fabriek": "",
-                    "msds": "", "gevaren": ""}
-        self.log_noodgeval(info["naam"])
-        self.start_nood_timer(info, 15)
+            info = {
+                "naam": "ONBEKENDE STOF",
+                "pictogram": "",
+                "n_ogen": "",
+                "n_huid": "",
+                "n_inademing": "",
+                "n_inslikken": "",
+                "pbm_lab": "",
+                "pbm_fabriek": "",
+                "pbm_pic_lab": "",
+                "pbm_pic_fabriek": "",
+                "msds": "",
+                "gevaren": ""
+            }
+
+        self.log_noodgeval(
+            info["naam"]
+        )
+
+        self.start_nood_timer(
+            info,
+            15,
+            blootstelling
+        )
 
     def verwerk_android_opdracht(self, tekst):
         self.log_status(f"OPDRACHT GEHOORD: {tekst}")
@@ -511,8 +731,59 @@ class ChemieApp(App):
             Clock.schedule_once(lambda dt: self.update_ui("CHEMI", BG_STANDBY, KLEUR_TEKST_DONKER), 3)
             return
         info = self.lab_database[stof_id]
-        if any(w in tekst for w in ["ogen", "spoelen", "nood", "help"]):
-            self.start_nood_timer(info, 15)
+        if any(
+            woord in tekst
+            for woord in [
+                # Ogen
+                "in ogen",
+                "in mijn ogen",
+                "in de ogen",
+                "oog geraakt",
+                "ogen geraakt",
+                "ogen spoelen",
+                "oog spoelen",
+        
+                # Huid
+                "op huid",
+                "op mijn huid",
+                "huidcontact",
+                "contact met huid",
+                "contact met de huid",
+                "op arm",
+                "op mijn arm",
+                "op handen",
+                "op mijn handen",
+                "op kleding",
+        
+                # Inademing
+                "ingeademd",
+                "ingeademt",
+                "damp ingeademd",
+                "gas ingeademd",
+                "moeilijk ademen",
+                "kan niet ademen",
+                "benauwd",
+        
+                # Inslikken
+                "ingeslikt",
+                "ingeslikken",
+                "doorgeslikt",
+                "opgedronken",
+                "ingenomen",
+                "in mond gekregen",
+            ]
+        ):
+            print(
+                "[NOOD WAARSCHUWING]: "
+                "NOODOPDRACHT DOORSTUREN NAAR "
+                "VERWERK_ANDROID_SPRAAK"
+            )
+        
+            self.verwerk_android_spraak(
+                tekst
+            )
+        
+            return
         elif any(w in tekst for w in ["gevaar", "gevaren", "risico", "gevaarlijk"]):
             threading.Thread(target=self.lees_gevaren_voor, args=(info,), daemon=True).start()
         elif any(w in tekst for w in ["pdf", "msds", "veiligheidsblad", "veiligheidsinformatieblad", "blad"]):
@@ -853,18 +1124,37 @@ class ChemieApp(App):
             KLEUR_TEKST_DONKER
         )
 
-    def start_nood_timer(self, info, minuten=15):
+    def start_nood_timer(
+        self,
+        info,
+        minuten=15,
+        blootstelling="ogen"
+    ):
         self.nood_actief = True
         self.systeem_bezet = True
         self.timer_seconds = minuten * 60
 
         print(
-            "GESTART VOOR "
-            f"{info.get('naam', 'ONBEKENDE STOF')}"
+            "[NOODPROCEDURE]: "
+            f"STOF={info.get('naam', 'ONBEKENDE STOF')}; "
+            f"BLOOTSTELLING={blootstelling}"
+        )
+
+        titels = {
+            "ogen": "NOODGEVAL OGEN",
+            "huid": "NOODGEVAL HUID",
+            "inademing": "NOODGEVAL INADEMING",
+            "inslikken": "NOODGEVAL INSLIKKEN",
+            "algemeen": "NOODGEVAL",
+        }
+
+        titel = titels.get(
+            blootstelling,
+            "NOODGEVAL"
         )
 
         self.update_ui(
-            f"NOODGEVAL\n{minuten}:00",
+            f"{titel}\n{minuten}:00",
             KLEUR_NOOD,
             "#FFFFFF",
             info.get("pictogram", "")
@@ -878,7 +1168,9 @@ class ChemieApp(App):
         self.btn_alarm_mute.text = "ALARM\nDEMPEN"
 
         self.btn_nood_stop.disabled = False
-        self.btn_nood_stop.text = "STOP NOODPROCEDURE"
+        self.btn_nood_stop.text = (
+            "STOP NOODPROCEDURE"
+        )
 
         Animation(
             pos_hint={
@@ -886,7 +1178,7 @@ class ChemieApp(App):
                 "y": 0.01
             },
             opacity=1,
-            duration=0.15
+            duration=0.5
         ).start(
             self.btn_alarm_mute
         )
@@ -911,37 +1203,86 @@ class ChemieApp(App):
             self.timer_event.cancel()
 
         self.timer_event = Clock.schedule_interval(
-            lambda dt: self._timer_tick(info),
+            lambda dt: self._timer_tick(
+                info,
+                blootstelling
+            ),
             1
         )
 
-        ooginstructie = info.get(
-            "n_ogen",
-            ""
+        instructie_velden = {
+            "ogen": "n_ogen",
+            "huid": "n_huid",
+            "inademing": "n_inademing",
+            "inslikken": "n_inslikken",
+        }
+
+        instructie_veld = instructie_velden.get(
+            blootstelling
         )
 
-        if not ooginstructie:
-            ooginstructie = (
-                "Begin onmiddellijk met het spoelen "
-                "van de ogen en volg de geldende "
-                "noodprocedure."
+        instructie = ""
+
+        if instructie_veld:
+            instructie = info.get(
+                instructie_veld,
+                ""
+            )
+
+        # Gebruik geen ooginstructie voor een ander
+        # type blootstelling.
+        if not instructie:
+            instructie = (
+                "Er kon geen specifieke eerstehulpinstructie "
+                "voor deze blootstelling worden uitgelezen. "
+                "Volg direct het veiligheidsinformatieblad "
+                "en de geldende noodprocedure."
             )
 
         threading.Thread(
             target=self.assistent_spreekt,
-            args=(ooginstructie,),
+            args=(instructie,),
             daemon=True
         ).start()
 
-    def _timer_tick(self, info):
-        if not self.nood_actief: return False
+    def _timer_tick(
+        self,
+        info,
+        blootstelling="ogen"
+    ):
+        if not self.nood_actief:
+            return False
+
         self.timer_seconds -= 1
         self.progress.value = self.timer_seconds
-        m, s = divmod(self.timer_seconds, 60)
-        self.centraal_label.text = f"NOODGEVAL\n{m:02d}:{s:02d}"
+
+        minuten, seconden = divmod(
+            self.timer_seconds,
+            60
+        )
+
+        titels = {
+            "ogen": "NOODGEVAL OGEN",
+            "huid": "NOODGEVAL HUID",
+            "inademing": "NOODGEVAL INADEMING",
+            "inslikken": "NOODGEVAL INSLIKKEN",
+            "algemeen": "NOODGEVAL",
+        }
+
+        titel = titels.get(
+            blootstelling,
+            "NOODGEVAL"
+        )
+
+        self.centraal_label.text = (
+            f"{titel}\n"
+            f"{minuten:02d}:{seconden:02d}"
+        )
+
         if self.timer_seconds <= 0:
             self.stop_noodprocedure()
             return False
+
         return True
 
     def stop_noodprocedure(self, *args):
@@ -1650,7 +1991,11 @@ class ChemieApp(App):
                 "pbm_pic_fabriek": pbm_pics_string,
     
                 "pictogram": pictogrammen_string,
+                
                 "n_ogen": oog_tekst,
+                "n_huid": "",
+                "n_inademing": "",
+                "n_inslikken": "",
                 "msds": Path(pdf_pad).name,
                 "gevaren": gevaren_tekst,
                 "pdf_geanalyseerd": True,
