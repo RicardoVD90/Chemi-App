@@ -1512,6 +1512,241 @@ class ChemieApp(App):
     def voeg_uniek_toe(self, lijst, waarde):
         if waarde and waarde not in lijst:
             lijst.append(waarde)
+
+    def extraheer_eerstehulp_instructies(
+        self,
+        rubriek_4
+    ):
+        """
+        Verdeelt Rubriek 4 over:
+        - inademing
+        - huidcontact
+        - oogcontact
+        - inslikken
+
+        Ondersteunt Nederlandse en Engelse SDS-opmaak.
+        """
+
+        resultaat = {
+            "ogen": "",
+            "huid": "",
+            "inademing": "",
+            "inslikken": "",
+        }
+
+        if not rubriek_4:
+            print(
+                "[RUBRIEK 4]: "
+                "GEEN TEKST BESCHIKBAAR"
+            )
+
+            return resultaat
+
+        # Tekst normaliseren.
+        tekst = str(rubriek_4)
+
+        tekst = tekst.replace("\r\n", "\n")
+        tekst = tekst.replace("\r", "\n")
+        tekst = tekst.replace("\t", " ")
+
+        # Meerdere spaties terugbrengen naar één spatie,
+        # maar regeleinden behouden.
+        tekst = "\n".join(
+            re.sub(
+                r"[ ]+",
+                " ",
+                regel
+            ).strip()
+            for regel in tekst.splitlines()
+            if regel.strip()
+        )
+
+        # Mogelijke tussenkopjes per blootstellingsroute.
+        koppen = {
+            "inademing": [
+                "na inademing",
+                "bij inademing",
+                "inademing",
+                "inhalatie",
+                "na inhalatie",
+                "inhalation",
+                "if inhaled",
+                "after inhalation",
+            ],
+
+            "huid": [
+                "na huidcontact",
+                "bij huidcontact",
+                "contact met de huid",
+                "kontakt met de huid",
+                "huidcontact",
+                "skin contact",
+                "after skin contact",
+                "in case of skin contact",
+                "on skin contact",
+            ],
+
+            "ogen": [
+                "na oogcontact",
+                "bij oogcontact",
+                "contact met de ogen",
+                "kontakt met de ogen",
+                "oogcontact",
+                "eye contact",
+                "after eye contact",
+                "in case of eye contact",
+                "contact with eyes",
+            ],
+
+            "inslikken": [
+                "na inslikken",
+                "bij inslikken",
+                "inslikken",
+                "ingeslikt",
+                "inname",
+                "ingestion",
+                "if swallowed",
+                "after ingestion",
+                "swallowed",
+            ],
+        }
+
+        # Bouw één patroon van alle mogelijke koppen.
+        alle_koppen = []
+
+        for categorie, termen in koppen.items():
+            for term in termen:
+                alle_koppen.append(
+                    (
+                        categorie,
+                        term
+                    )
+                )
+
+        # Langste termen eerst, zodat bijvoorbeeld
+        # "contact met de ogen" vóór "oogcontact"
+        # wordt behandeld.
+        alle_koppen.sort(
+            key=lambda item: len(item[1]),
+            reverse=True
+        )
+
+        patroon_delen = [
+            re.escape(term)
+            for categorie, term in alle_koppen
+        ]
+
+        koppen_patroon = (
+            r"(?im)"
+            r"(?:^|\n|[-•]\s*)"
+            r"(?:\d+(?:\.\d+)*[\.\s:-]*)?"
+            r"("
+            + "|".join(patroon_delen)
+            + r")"
+            r"\s*[:\-]?\s*"
+        )
+
+        matches = list(
+            re.finditer(
+                koppen_patroon,
+                tekst,
+                flags=re.IGNORECASE | re.MULTILINE
+            )
+        )
+
+        if not matches:
+            print(
+                "[RUBRIEK 4]: "
+                "GEEN AFZONDERLIJKE BLOOTSTELLINGSKOPPEN "
+                "HERKEND"
+            )
+
+            return resultaat
+
+        def bepaal_categorie(gevonden_kop):
+            gevonden_kop = gevonden_kop.lower().strip()
+
+            for categorie, termen in koppen.items():
+                if gevonden_kop in termen:
+                    return categorie
+
+            return None
+
+        # Haal de tekst tussen ieder tussenkopje op.
+        for index, match in enumerate(matches):
+            gevonden_kop = (
+                match.group(1)
+                .lower()
+                .strip()
+            )
+
+            categorie = bepaal_categorie(
+                gevonden_kop
+            )
+
+            if not categorie:
+                continue
+
+            begin = match.end()
+
+            if index + 1 < len(matches):
+                einde = matches[index + 1].start()
+            else:
+                einde = len(tekst)
+
+            instructie = tekst[
+                begin:einde
+            ].strip()
+
+            # Stoppen vóór onderdelen zoals 4.2 en 4.3.
+            instructie = re.split(
+                r"(?im)"
+                r"(?:^|\n)\s*"
+                r"4\.[23]\.?\s+",
+                instructie,
+                maxsplit=1
+            )[0].strip()
+
+            # Stoppen als onverwacht Rubriek 5 voorkomt.
+            instructie = re.split(
+                r"(?im)"
+                r"(?:^|\n)\s*"
+                r"(?:rubriek|sectie|section|hoofdstuk)"
+                r"\s*5\b",
+                instructie,
+                maxsplit=1
+            )[0].strip()
+
+            # Opmaak opruimen.
+            instructie = re.sub(
+                r"\s+",
+                " ",
+                instructie
+            ).strip(" :-•")
+
+            if not instructie:
+                continue
+
+            # Een onredelijk lang resultaat wijst meestal
+            # op een niet-herkend volgend tussenkopje.
+            if len(instructie) > 900:
+                instructie = instructie[:900].rsplit(
+                    " ",
+                    1
+                )[0]
+
+                instructie += "."
+
+            resultaat[categorie] = instructie
+
+            print(
+                "[RUBRIEK 4 MATCH]: "
+                f"{categorie.upper()} -> "
+                f"{instructie[:180]}"
+            )
+
+        return resultaat
+        
     def analyseer_msds_pdf(self, pdf_pad):
         """
         Analyseert automatisch:
@@ -1879,61 +2114,73 @@ class ChemieApp(App):
             )
     
             # -----------------------------------
-            # OOGSPOELINFORMATIE UIT RUBRIEK 4
+            # EERSTE HULP UIT RUBRIEK 4
             # -----------------------------------
-    
-            oog_tekst = (
-                "Bij contact met de ogen direct "
-                "spoelen met overvloedig water en "
-                "de geldende noodprocedure volgen."
+
+            eerste_hulp = (
+                self.extraheer_eerstehulp_instructies(
+                    rubriek_4
+                )
             )
-    
-            if rubriek_4:
-                regels = [
-                    regel.strip()
-                    for regel in rubriek_4.splitlines()
-                    if regel.strip()
-                ]
-    
-                oog_regels = []
-    
-                oog_zoektermen = [
-                    "oog",
-                    "ogen",
-                    "eye contact",
-                    "eyes",
-                    "spoelen",
-                    "rinse",
-                    "flush",
-                ]
-    
-                for index, regel in enumerate(regels):
-                    if any(
-                        zoekterm in regel
-                        for zoekterm in oog_zoektermen
-                    ):
-                        self.voeg_uniek_toe(
-                            oog_regels,
-                            regel
-                        )
-    
-                        # Soms staat de instructie op
-                        # de opvolgende regel.
-                        if index + 1 < len(regels):
-                            volgende_regel = (
-                                regels[index + 1]
-                            )
-    
-                            if len(volgende_regel) > 15:
-                                self.voeg_uniek_toe(
-                                    oog_regels,
-                                    volgende_regel
-                                )
-    
-                if oog_regels:
-                    oog_tekst = " ".join(
-                        oog_regels[:3]
-                    ).strip()
+
+            oog_tekst = eerste_hulp.get(
+                "ogen",
+                ""
+            )
+
+            huid_tekst = eerste_hulp.get(
+                "huid",
+                ""
+            )
+
+            inademing_tekst = eerste_hulp.get(
+                "inademing",
+                ""
+            )
+
+            inslikken_tekst = eerste_hulp.get(
+                "inslikken",
+                ""
+            )
+
+            gecombineerde_termen = [
+                "huid- en/of oogcontact",
+                "huid- en oogcontact",
+                "skin and eye contact",
+            ]
+
+            if any(
+                term in rubriek_4.lower()
+                for term in gecombineerde_termen
+            ):
+                gecombineerde_tekst = (
+                    eerste_hulp.get("huid", "")
+                    or eerste_hulp.get("ogen", "")
+                )
+
+                if gecombineerde_tekst:
+                    huid_tekst = gecombineerde_tekst
+                    oog_tekst = gecombineerde_tekst
+            # Alleen voor oogcontact houden we de
+            # bestaande algemene terugvalinstructie.
+            if not oog_tekst:
+                oog_tekst = (
+                    "Er kon geen specifieke "
+                    "oogcontactinstructie uit rubriek 4 "
+                    "worden uitgelezen. Volg direct het "
+                    "veiligheidsinformatieblad en de "
+                    "geldende noodprocedure."
+                )
+
+            print(
+                "[EERSTE HULP RESULTAAT]: "
+                f"OGEN={'JA' if oog_tekst else 'NEE'}; "
+                f"HUID={'JA' if huid_tekst else 'NEE'}; "
+                f"INADEMING="
+                f"{'JA' if inademing_tekst else 'NEE'}; "
+                f"INSLIKKEN="
+                f"{'JA' if inslikken_tekst else 'NEE'}"
+            )
     
             # -----------------------------------
             # GEVARENTEXT UIT RUBRIEK 2
@@ -1993,9 +2240,9 @@ class ChemieApp(App):
                 "pictogram": pictogrammen_string,
                 
                 "n_ogen": oog_tekst,
-                "n_huid": "",
-                "n_inademing": "",
-                "n_inslikken": "",
+                "n_huid": huid_tekst,
+                "n_inademing": inademing_tekst,
+                "n_inslikken": inslikken_tekst,
                 "msds": Path(pdf_pad).name,
                 "gevaren": gevaren_tekst,
                 "pdf_geanalyseerd": True,
