@@ -2318,7 +2318,7 @@ class ChemieApp(App):
                 f"[CACHE FOUT OPSLAAN]: {fout}"
             )
             
-        def laad_stoffen(self):
+    def laad_stoffen(self):
 
             database = {}
     
@@ -2381,7 +2381,6 @@ class ChemieApp(App):
                     )
     
                     print(
-                        f""
                         f"{bestand}"
                     )
     
