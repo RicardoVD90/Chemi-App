@@ -6,6 +6,7 @@ import re
 import asyncio
 import threading
 import difflib
+import json
 from pathlib import Path
 from pypdf import PdfReader
 
@@ -128,6 +129,7 @@ class ChemieApp(App):
         self.pdf_renderer = AndroidPdfRenderCache(
         self.RENDERED_MSDS_DIR,schaal=1.5,logger=print)
         self.NOODLOG_PAD = os.path.join(self.DATA_DIR, "noodlog.csv")
+        self.CACHE_PAD = os.path.join(self.DATA_DIR,"stoffen_cache.json")
         self.maak_schrijfbare_mappen()
         self.alarm_sound = self.laad_geluid("alarm.wav")
         self.ping_sound = self.laad_geluid("ping.wav")
@@ -2278,82 +2280,187 @@ class ChemieApp(App):
             )
     
             return None
+    def laad_cache(self):
+        try:
+            if os.path.exists(self.CACHE_PAD):
+                with open(
+                    self.CACHE_PAD,
+                    "r",
+                    encoding="utf-8"
+                ) as bestand:
 
-    def laad_stoffen(self):
-        """
-        Bouwt de database volledig op uit de PDF-bestanden
-        in de map msds. Er wordt geen CSV gebruikt.
-        """
-    
-        database = {}
-    
-        if not os.path.exists(MSDS_DIR):
+                    return json.load(bestand)
+
+        except Exception as fout:
             print(
-                "[DATABASE FOUT\]: "
-                f"MSDS-map bestaat niet: {MSDS_DIR}"
+                f"[CACHE FOUT LEZEN]: {fout}"
             )
+
+        return {}
+
+    def bewaar_cache(self, cache):
+        try:
+            with open(
+                self.CACHE_PAD,
+                "w",
+                encoding="utf-8"
+            ) as bestand:
+
+                json.dump(
+                    cache,
+                    bestand,
+                    ensure_ascii=False,
+                    indent=2
+                )
+
+        except Exception as fout:
+            print(
+                f"[CACHE FOUT OPSLAAN]: {fout}"
+            )
+            
+        def laad_stoffen(self):
+
+            database = {}
     
-            return database
+            if not os.path.exists(MSDS_DIR):
     
-        pdf_bestanden = sorted(
-            bestand
-            for bestand in os.listdir(MSDS_DIR)
-            if bestand.lower().endswith(".pdf")
-        )
+                print(
+                    "[DATABASE FOUT]: "
+                    f"MSDS-map bestaat niet: {MSDS_DIR}"
+                )
     
-        totaal = len(pdf_bestanden)
+                return database
     
-        print(
-            f"[MSDS ANALYSE]: {totaal} "
-            "PDF-BESTANDEN ANALYSEREN"
-        )
+            cache = self.laad_cache()
     
-        for nummer, bestand in enumerate(
-            pdf_bestanden,
-            1
-        ):
-            pdf_pad = os.path.join(
-                MSDS_DIR,
+            pdf_bestanden = sorted(
                 bestand
+                for bestand in os.listdir(MSDS_DIR)
+                if bestand.lower().endswith(".pdf")
             )
+    
+            totaal = len(pdf_bestanden)
     
             print(
                 f"[MSDS ANALYSE]: "
-                f"{nummer}/{totaal} {bestand}"
+                f"{totaal} PDF-BESTANDEN"
             )
     
-            pdf_data = self.analyseer_msds_pdf(
-                pdf_pad
-            )
+            gewijzigd = False
     
-            if not pdf_data:
-                print(
-                    "[MSDS ANALYSE]: "
-                    f"OVERSLAAN {bestand}"
+            for nummer, bestand in enumerate(
+                pdf_bestanden,
+                1
+            ):
+    
+                pdf_pad = os.path.join(
+                    MSDS_DIR,
+                    bestand
                 )
     
-                continue
+                huidige_mtime = os.path.getmtime(
+                    pdf_pad
+                )
     
-            stof_id = self.normaliseer_stofnaam(
-                pdf_data["naam"]
+                cache_item = cache.get(
+                    bestand
+                )
+    
+                # -----------------------
+                # CACHE GEBRUIKEN
+                # -----------------------
+    
+                if (
+                    cache_item
+                    and cache_item.get("mtime")
+                    == huidige_mtime
+                ):
+    
+                    pdf_data = cache_item.get(
+                        "data"
+                    )
+    
+                    print(
+                        f""
+                        f"{bestand}"
+                    )
+    
+                else:
+    
+                    print(
+                        f""
+                        f"{bestand}"
+                    )
+    
+                    pdf_data = self.analyseer_msds_pdf(
+                        pdf_pad
+                    )
+    
+                    if pdf_data:
+    
+                        cache[bestand] = {
+                            "mtime": huidige_mtime,
+                            "data": pdf_data
+                        }
+    
+                        gewijzigd = True
+    
+                if not pdf_data:
+                    continue
+    
+                stof_id = (
+                    self.normaliseer_stofnaam(
+                        pdf_data["naam"]
+                    )
+                )
+    
+                if not stof_id:
+                    continue
+    
+                database[stof_id] = pdf_data
+    
+            # -----------------------
+            # Oude cache verwijderen
+            # -----------------------
+    
+            bestaande_pdfs = set(
+                pdf_bestanden
             )
     
-            if not stof_id:
-                continue
+            te_verwijderen = []
     
-            database[stof_id] = pdf_data
+            for naam in cache:
+    
+                if naam not in bestaande_pdfs:
+                    te_verwijderen.append(
+                        naam
+                    )
+    
+            for naam in te_verwijderen:
+    
+                del cache[naam]
+    
+                gewijzigd = True
+    
+            # -----------------------
+            # Cache opslaan
+            # -----------------------
+    
+            if gewijzigd:
+    
+                self.bewaar_cache(
+                    cache
+                )
+    
+                print(
+                    "OPGESLAGEN"
+                )
     
             print(
-                "[PDF STOF GEREGISTREERD]: "
-                f"{stof_id} -> {bestand}"
+                f"{len(database)} stoffen geladen"
             )
     
-        print(
-            f"{len(database)} stoffen "
-            "volledig geanalyseerd uit PDF-bestanden"
-        )
-    
-        return database
+            return database
 
     def vind_beste_stof(self, opdracht):
         if not opdracht or not self.lab_database: return None
